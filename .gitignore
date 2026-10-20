@@ -1,0 +1,21 @@
+# Personal learning context stays out of commits by default.
+/devpost/learner-profile.md
+
+# Local credentials; only a secret-free example may be committed.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Application artifacts (reserved for the approved build).
+node_modules/
+.next/
+out/
+coverage/
+playwright-report/
+test-results/
+.DS_Store
+*.tsbuildinfo
+# Local source payloads stay private until source-use/republication review.
+/docs/evidence/
