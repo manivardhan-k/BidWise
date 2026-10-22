@@ -43,3 +43,30 @@ it("rejects changing a pasted address before geocoding or adding claims to an ad
   expect((await analyze(request({ token: found.choices[0].token, revision: 1, listing }))).status).toBe(400);
   expect(calls.analyzeEvidence).not.toHaveBeenCalled();
 });
+it("recomputes user scenarios on the server and includes them with unavailable AI", async () => {
+  const { emptyFinance, financeInputKey } = await import("../../src/lib/finance/engines");
+  const finance = emptyFinance();
+  finance.rent = { monthlyRent: 2000, vacancy: .05, annualTax: 3600, annualInsurance: 1200, annualUtilities: 0, annualHoa: 0, annualMaintenance: 1200, management: .1, annualCapitalReserve: 1800 };
+  const found = await (await identify(request({ address }))).json();
+  const body = await (await analyze(request({ token: found.choices[0].token, revision: 2, finance, calculatedProfit: 999999 }))).json();
+  expect(body.financeInputKey).toBe(financeInputKey(finance));
+  expect(body.financeResults.rent.data.annualCash).toBe(12720);
+  expect(body.financeResults.flip.status).toBe("incomplete");
+  const evidence = calls.analyzeEvidence.mock.calls[0][0] as Map<string, unknown>;
+  expect(evidence.get("rent_annualCash")).toBe(12720);
+  expect(evidence.get("rent_assumptions")).toContain('"monthlyRent":2000');
+  expect([...evidence.values()]).not.toContain(999999);
+});
+it("hashes current assumptions with the canonical source snapshot and rejects invalid assumptions before sources", async () => {
+  const { emptyFinance } = await import("../../src/lib/finance/engines");
+  const finance = emptyFinance();
+  const found = await (await identify(request({ address }))).json();
+  calls.analyzeEvidence.mockResolvedValue({ data: { summary: "Fixture interpretation", findings: [], unansweredQuestions: [], consistencyFlags: [] }, model: "fictional" });
+  const run = async (assumptions: typeof finance) => (await analyze(request({ token: found.choices[0].token, revision: 3, finance: assumptions }))).json();
+  const first = await run(finance);
+  const changed = await run({ ...finance, rent: { ...finance.rent, monthlyRent: 2500 } });
+  expect(first.snapshotId).not.toBe(changed.snapshotId);
+  const before = calls.recordsFor.mock.calls.length;
+  expect((await analyze(request({ token: found.choices[0].token, revision: 3, finance: { ...finance, rent: { ...finance.rent, vacancy: 1.1 } } }))).status).toBe(400);
+  expect(calls.recordsFor.mock.calls.length).toBe(before);
+});

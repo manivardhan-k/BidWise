@@ -41,6 +41,6 @@ export async function hazardsFor(identity: PropertyIdentity): Promise<SourceResu
     return { status: "available", data };
   } catch { return { status: "unavailable", message: "Flood screening is unavailable. This does not establish that the property has no flood risk." }; }
 }
-export function snapshotId(identity: PropertyIdentity, records: SourceResult<PropertyRecords>, flood: SourceResult<FloodScreen>) {
-  return createHash("sha256").update(JSON.stringify({ identity, records, flood })).digest("hex");
+export function snapshotId(identity: PropertyIdentity, records: SourceResult<PropertyRecords>, flood: SourceResult<FloodScreen>, scenario?: unknown) {
+  return createHash("sha256").update(JSON.stringify({ identity, records, flood, scenario })).digest("hex");
 }

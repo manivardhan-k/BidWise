@@ -1,6 +1,6 @@
 # BidWise
 
-New Jersey property research with visible evidence and explicit unknowns. **Build in progress:** NJ address autocomplete, parcel confirmation, 30 property-record fields, flood screening and a responsive Mapbox report work locally. Copied-page extraction, target selection and typed claim comparisons are implemented; successful end-to-end live Gemini acceptance and financial scenarios remain unfinished.
+New Jersey property research with visible evidence and explicit unknowns. **Build in progress:** NJ address autocomplete, parcel confirmation, 30 property-record fields, flood screening and a responsive Mapbox report work locally. Copied-page processing includes target selection and typed claim comparisons. Editable renovation, cash resale and basic cash rental tools are also implemented. Successful end-to-end live Gemini acceptance and release readiness remain unfinished.
 
 ## Local setup
 
@@ -22,6 +22,6 @@ Keys, pasted text and report drafts are not persisted by the application. Confir
 - `npm run probe:data` — three public-building controls, or append up to three NJ addresses. Writes ignored local evidence; no owner fields requested.
 - `node --import tsx scripts/probe-ai.ts` — **explicit live free-tier probe**, only after local configuration and account verification. At most one delayed retry for HTTP 503; stops on service failure. Normal tests never run it.
 
-Current measured state: **51 unit tests, 14 browser tests, typecheck, lint and production build passed**. Real address→confirmation→records works in production; a real Mapbox report was inspected. Successful live AI analysis/extraction and release readiness remain pending. Known development-tool advisories/peer warnings and untested target-runtime/fresh-install checks are documented.
+Current measured state: **60 unit tests, 18 browser tests, typecheck, lint and production build passed**. Real address→confirmation→records works in production; a real Mapbox report was inspected. Successful live AI analysis/extraction and release readiness remain pending. Known development-tool advisories/peer warnings and the untested Node24 target are documented. A clean Node26 install, build, unit tests and lint also passed in an isolated copy without credentials.
 
-See [data feasibility](docs/data-feasibility.md), [build handoff](docs/build-handoff.md), [approved specification](devpost/spec.md) and [checklist](devpost/checklist.md). Both Gemini stages, renovation, cash resale and basic cash rental remain in scope. Nothing has been pushed beyond the original repository baseline.
+See [data feasibility](docs/data-feasibility.md), [build handoff](docs/build-handoff.md), [approved specification](devpost/spec.md) and [checklist](devpost/checklist.md). The financial tools keep missing costs unknown, calculate Base/Downside resale and recurring rental cash separately, and mark AI commentary outdated after edits. Inputs/results are recomputed on the server for AI review; that live review still needs acceptance. See [financial verification](docs/finance-verification.md) and [third-party notices](THIRD_PARTY_NOTICES.md). Nothing has been pushed beyond the original repository baseline.

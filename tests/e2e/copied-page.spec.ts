@@ -11,7 +11,7 @@ test("selects a pasted target before matching and keeps price kinds and other pr
   await page.route("**/api/records", route => route.fulfill({ json: records }));
   await page.route("**/api/hazards", route => route.fulfill({ json: flood }));
   await page.route("**/api/map-config", route => route.fulfill({ status: 503, json: { error: "No map during tests" } }));
-  await page.route("**/api/analysis", route => { const body = route.request().postDataJSON(); analysisListing = body.listing; return route.fulfill({ json: { status: "unavailable", message: "AI fixture unavailable", revision: body.revision, records, flood } }); });
+  await page.route("**/api/analysis", route => { const body = route.request().postDataJSON(); analysisListing = body.listing; return route.fulfill({ json: { status: "unavailable", message: "AI fixture unavailable", revision: body.revision, financeInputKey: JSON.stringify(body.finance), records, flood } }); });
   await page.goto("/"); await page.getByRole("button", { name: "Copied page text", exact: true }).click();
   const text = "Home | 10 Sample St, Sample, NJ | Asking $200,000 | Built 2000 | Related property: 20 Other St, Sample, NJ | 5 bedrooms";
   await page.getByLabel("Copied property page", { exact: true }).fill(text);

@@ -59,7 +59,7 @@ test("retains last retrieved evidence and rejects analysis when a source refresh
   await setup(page); await page.goto("/"); await confirm(page);
   await expect(page.getByText("AI analysis could not be completed. Your source records remain available.")).toBeVisible();
   await page.route("**/api/analysis", route => route.fulfill({ json: {
-    status: "unavailable", message: "Provider failed", revision: route.request().postDataJSON().revision,
+    status: "unavailable", message: "Provider failed", revision: route.request().postDataJSON().revision, financeInputKey: JSON.stringify(route.request().postDataJSON().finance),
     records: { status: "unavailable", message: "Parcel source timed out" }, flood: availableFlood,
   } }));
   await page.getByRole("button", { name: "Refresh AI analysis" }).click();
@@ -75,8 +75,8 @@ test("rejects old analysis after a different property is confirmed", async ({ pa
     const request = route.request().postDataJSON();
     if (request.token === "fixture-confirmation-token") {
       firstRequested = true;
-      await new Promise<void>(resolve => { release = async () => { await route.fulfill({ json: { status: "unavailable", message: "Old property analysis", revision: request.revision, records, flood: availableFlood } }).catch(() => {}); resolve(); }; });
-    } else await route.fulfill({ json: { status: "unavailable", message: "Current property analysis unavailable", revision: request.revision, records: { ...records, data: { ...records.data, pin: "0000_2_2" } }, flood: availableFlood } });
+      await new Promise<void>(resolve => { release = async () => { await route.fulfill({ json: { status: "unavailable", message: "Old property analysis", revision: request.revision, financeInputKey: JSON.stringify(request.finance), records, flood: availableFlood } }).catch(() => {}); resolve(); }; });
+    } else await route.fulfill({ json: { status: "unavailable", message: "Current property analysis unavailable", revision: request.revision, financeInputKey: JSON.stringify(request.finance), records: { ...records, data: { ...records.data, pin: "0000_2_2" } }, flood: availableFlood } });
   });
   await page.goto("/"); await confirm(page);
   await expect.poll(() => firstRequested).toBe(true);
@@ -94,7 +94,7 @@ test("shows the expanded record, readable deed date and explicit coverage gaps",
   const { normalizeRecords } = await import("../../src/lib/property/evidence");
   const expanded = { status: "available", data: normalizeRecords({ PAMS_PIN: identity.pin, PROP_LOC: "10 TEST STREET", PROP_CLASS: "2", COUNTY: "SAMPLE", LAND_VAL: 120000, IMPRVT_VAL: 50000, NET_VALUE: 170000, DWELL: 1, CALC_ACRE: 0.1, BLDG_DESC: "1S F", DEED_DATE: "181010", DEED_BOOK: "00123", DEED_PAGE: "00045" }, identity.checkedAt) };
   await page.route("**/api/records", route => route.fulfill({ json: expanded }));
-  await page.route("**/api/analysis", route => route.fulfill({ json: { status: "unavailable", message: "AI unavailable during verification", revision: route.request().postDataJSON().revision, records: expanded, flood: availableFlood } }));
+  await page.route("**/api/analysis", route => route.fulfill({ json: { status: "unavailable", message: "AI unavailable during verification", revision: route.request().postDataJSON().revision, financeInputKey: JSON.stringify(route.request().postDataJSON().finance), records: expanded, flood: availableFlood } }));
   await page.goto("/"); await confirm(page);
   await expect(page.getByText("October 10, 2018", { exact: true })).toBeVisible();
   await expect(page.getByText("Year interpreted from source")).toBeVisible();

@@ -16,7 +16,7 @@ export type FloodScreen = {
 };
 export type SourceResult<T> = { status: "available"; data: T } | { status: "unavailable"; message: string };
 export type AnalysisResult = {
-  status: "available"; snapshotId: string; generatedAt: string; model: string; revision: number;
+  status: "available"; financeInputKey: string; snapshotId: string; generatedAt: string; model: string; revision: number;
   summary: string; findings: { explanation: string; evidenceIds: string[]; numericClaims: { evidenceId: string; value: number }[] }[];
   unansweredQuestions: string[]; consistencyFlags: string[];
   records: SourceResult<PropertyRecords>; flood: SourceResult<FloodScreen>;
