@@ -111,3 +111,9 @@ test("shows the expanded record, readable deed date and explicit coverage gaps",
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
+test("shows the actual fallback model beside a successful AI explanation", async ({ page }) => {
+  await setup(page);
+  await page.route("**/api/analysis", route => route.fulfill({ json: { status: "available", summary: "Fictional fallback explanation for browser verification", findings: [], unansweredQuestions: [], consistencyFlags: [], model: "gemini-3.5-flash-lite", fallbackFrom: "gemini-3.8-flash", snapshotId: "fixture-snapshot", generatedAt: new Date().toISOString(), revision: route.request().postDataJSON().revision, financeInputKey: JSON.stringify(route.request().postDataJSON().finance), records, flood: availableFlood } }));
+  await page.goto("/"); await confirm(page);
+  await expect(page.locator(".analysis-section")).toContainText("AI interpretation · gemini-3.5-flash-lite · Free fallback after gemini-3.8-flash service failures");
+});

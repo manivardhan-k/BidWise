@@ -2,9 +2,9 @@
 
 ## Current checkpoint
 
-Fast mode; approved scope/PRD/spec/order. Early learner source/report UI review is accepted. Both Gemini extraction and analysis, shared renovation, cash resale and basic cash rental remain required. Stop at **5% remaining /95% used** in the five-hour Codex window; latest check was 39% used /61% remaining. Recheck live before continuing. No purchases, billing change, paid fallback, automatic reset or public push authorized.
+Fast mode; approved scope/PRD/spec/order. Early learner source/report UI review is accepted. Both Gemini extraction and analysis, shared renovation, cash resale and basic cash rental remain required. Stop at **5% remaining /95% used** in the five-hour Codex window; latest check was68% used /32% remaining. Recheck live before continuing. No purchases, billing change, paid fallback, automatic reset or public push authorized.
 
-App root `/Users/mani/current_projects/BidWise/app`, main. Original remote README/history a87b7b4 preserved. Local checkpoints: caf57d4 source/report, 835105e copied-page and claim binding. The verified financial checkpoint is the next local commit after835105e. Main slice boxes remain unchecked because complete live Gemini acceptance has not passed. The learner authorized independent work during the outage; do not cut either AI role or repeat the early interview.
+App root `/Users/mani/current_projects/BidWise/app`, main. Original remote README/history a87b7b4 preserved. Local checkpoints: caf57d4 source/report, 835105e copied-page and claim binding. Financial checkpoint6e43885 is saved locally. Main slice boxes remain unchecked because complete live Gemini acceptance has not passed. The learner authorized independent work during the outage; do not cut either AI role or repeat the early interview.
 
 ## Built and verified
 
@@ -22,17 +22,29 @@ App root `/Users/mani/current_projects/BidWise/app`, main. Original remote READM
 
 ## Verification and preview
 
-**60 unit tests, 18 production browser regressions, typecheck, lint and Webpack production build pass.** See `docs/finance-verification.md`. Domain tests include both approved hand fixtures, max-bid round trips, allowance single-counting, missing/zero/negative/overflow guards and independent completeness. Browser fixtures exercise recalculation, chart/table agreement, stale/mismatched AI, mobile width390, source failures and pasted targets without model/map credits.
+**69 unit tests,19 production browser regressions, typecheck, lint and Webpack production build pass.** See `docs/finance-verification.md`. Domain tests include both approved hand fixtures, max-bid round trips, allowance single-counting, missing/zero/negative/overflow guards and independent completeness. Browser fixtures exercise recalculation, chart/table agreement, stale/mismatched AI, mobile width390, source failures and pasted targets without model/map credits.
 
 Real production source smoke returned 30 fields /24 available for75RichardsonSt, full-year deed date and URL/oversize parse rejection400/413, with zero live AI calls. Gemini credential absent from all27 checked production client chunks. Intended staging must still be scanned before commit; keep .env.local, private learner-profile, raw evidence and test artifacts ignored.
 
-Production preview `http://127.0.0.1:3100`, session58801. Processes can expire. Restart `npm run build` then `npm start -- --hostname 127.0.0.1 --port 3100`. Stop an agent-owned preview before rebuilding to avoid mixing output. Development uses port3000. Node26.10.0 tested; targetNode24 remains unverified.
+Production preview `http://127.0.0.1:3100`, session68889. Processes can expire. Restart `npm run build` then `npm start -- --hostname 127.0.0.1 --port 3100`. Stop an agent-owned preview before rebuilding to avoid mixing output. Development uses port3000. Node26.10.0 tested; targetNode24 remains unverified.
 
 Rendered production-test fixture screenshots inspected: `/private/tmp/bidwise-finance-desktop-test.png`, `/private/tmp/bidwise-finance-mobile-test.png`. Mobile stacks without overflow. These are fictional test calculations, not real-property/model acceptance. Interactive Work browser control is disabled; the user's existing tab/search was not modified. Prior real map/source visual review remains recorded in the previous checkpoint.
 
-## Gemini status and remaining gates
+## Current Gemini diagnosis and learner-selected mitigation
 
-See `docs/gemini-reliability-check-2026-10-22.md` and the October20 report. Google staff reproduced a nested maxItems structured-output issue; the app omits only that provider-facing keyword and retains all local Zod/resource/evidence guards. A minimal3.8JSON call and one controlled extraction returned200. The original-schema3.8comparison returned503, so this does not prove why capacity failed. Two actual-app rechecks after correction still returned extraction503 after the one allowed retry; analysis skipped. No further live experiments during financial work. Configuration remains gemini-3.8-flash/free tier. SDK2.30.0,45-second timeout,maxRetries0, one1–1.249second retry only on503; no quota/auth/timeout retry.
+The learner supplied a successful older API interaction and a current3.8 Studio success screenshot. Exact/minimal3.8 API requests, stablev1 and generateContent still returned503 high demand with the same local key. Both model metadata requests returned200. A3.5 tiny call and actual BidWise extraction/analysis functions succeeded in a separate control. These observations support3.8 API serving availability as the immediate blocker, not missing advertised free-tier eligibility; Google confirms the same API/Studio symptom. Internal Google/project routing remains unverified. Do not suggest a paid upgrade or key regeneration as a proven fix.
+
+The learner explicitly chose3.8 preferred with free3.5 Flash-Lite only after503 failures. Configured `GEMINI_FALLBACK_MODEL=gemini-3.5-flash-lite` in ignored.env.local and the secret-free example. Two primary attempts (one1–1.249second delayed503 retry), then at most one fallback attempt only if both primary replies are503. No SDK retries, each attempt45seconds. Quota/auth/bad-request/network/timeout/invalid-output failures stop; no alternate key/paid model/provider. Both stages retain the same validation. UI shows actual successful model/fallback origin; safe failures carry category/model/attempt count without raw provider payloads.
+
+Live mitigation is partial: the real source probe extracted through3.5 but later analysis returned503 from all attempts. Final production smoke extracted through3.5 and passed signed-claim→parcel binding, but canonical full-report analysis ended network-unavailable on attempt3/3.5. Records and calculated fixtures remained available. Do not claim end-to-end live repair or mark completed AI slices. No more repeated live probes without a new diagnostic reason/provider change. See `docs/gemini-api-diagnosis-2026-10-22.md` and ignored evidence.
+
+`npm run probe:gemini` defaults to metadata only. Explicit --case=logged|minimal|stable|legacy makes one fixed public-arithmetic request with no automatic retries; never send private input through the store=true logged-payload case. Main tests remain isolated from live provider calls.
+
+The learner also explicitly requests property-specific prefilled financial estimates. Planning updated in PRD/spec/checklist and `docs/property-estimate-plan.md`; implementation remains pending. Preserve user edits, field provenance/basis, dates/confidence/ranges and stale-property guards. Do not silently equate assessment/nominal sale/opening bid to proposed purchase or invent condition/interior details. Gemini reliability is this turn's priority.
+
+## Historical Gemini status and remaining gates
+
+See `docs/gemini-reliability-check-2026-10-22.md` and the October20 report. Google staff reproduced a nested maxItems structured-output issue; the app omits only that provider-facing keyword and retains all local Zod/resource/evidence guards. A minimal3.8JSON call and one controlled extraction returned200. The original-schema3.8comparison returned503, so this does not prove why capacity failed. Two actual-app rechecks after correction still returned extraction503 after the one allowed retry; analysis skipped. No further live experiments during financial work. Configuration remains gemini-3.8-flash/free tier. SDK2.30.0,45-second timeout,maxRetries0, one1–1.249second primary retry only on503, now followed by the explicitly approved free fallback above; no quota/auth/timeout retry.
 
 Remaining: complete real extraction AND property/scenario-analysis acceptance, malicious/noisy/multi-property live fixtures, bounded permitted-source URL Context investigation, target Node24/release tooling checks, source-use/republication review, project-wide license choice, public-host signing/abuse/provider-budget controls, final learner review and learning wrap-up/app map. Do not call this ready to ship or author submission/reflections for the learner. No public push/deployment authorized.
 
@@ -44,4 +56,4 @@ An isolated copy at `/private/tmp/bidwise-fresh-check-e6bh75l8` excluded .env.lo
 
 ## Next work
 
-Save the reviewed financial checkpoint, then resolve outstanding live-provider and release gates. Invite feedback on the now-usable financial UI without marking the final review complete. The user's early review is already accepted; final completion still needs the actual full-journey review. `devpost/checklist.md` is the approval/progress authority; preserve both AI features and all approved financial behavior.
+Save the reviewed Gemini-fallback checkpoint, then implement the requested supported starting estimates and resolve outstanding live-provider and release gates. Invite feedback on the now-usable financial UI without marking the final review complete. The user's early review is already accepted; final completion still needs the actual full-journey review. `devpost/checklist.md` is the approval/progress authority; preserve both AI features and all approved financial behavior.

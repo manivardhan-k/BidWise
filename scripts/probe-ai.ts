@@ -24,7 +24,7 @@ for (const [stage, run] of [
     console.log(`${stage}: returned and passed local schema/evidence guards; semantic review still required`);
   } catch (error) {
     const failure = safeGeminiFailure(error);
-    results[stage] = { status: "failed", category: failure.category, httpStatus: failure.httpStatus, attempts: failure.attempts };
+    results[stage] = { status: "failed", category: failure.category, httpStatus: failure.httpStatus, attempts: failure.attempts, failedModel: failure.model };
     console.log(`${stage}: ${failure.category}${failure.httpStatus ? ` (HTTP ${failure.httpStatus})` : ""}; ${failure.attempts} attempt(s), stopped`);
     process.exitCode = 1;
     // Stop on service/access failures rather than spending another call on the

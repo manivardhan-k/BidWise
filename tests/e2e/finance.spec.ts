@@ -43,7 +43,9 @@ test("recalculates the resale/rental fixtures, chart table and shared costs; mar
   await expect(page.locator(".rental-context")).toContainText("Base renovation: $30,000");
   await page.locator("#scenarios").screenshot({ path: "/private/tmp/bidwise-finance-desktop-test.png" });
   await page.setViewportSize({ width: 390, height: 844 }); await page.emulateMedia({ reducedMotion: "reduce" });
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  const overflow = await page.evaluate(() => ({ width: innerWidth, scroll: document.documentElement.scrollWidth, elements: [...document.querySelectorAll("*")].filter(element => element.getBoundingClientRect().right > innerWidth + 1).slice(-8).map(element => ({ tag: element.tagName, class: element.getAttribute("class"), width: element.getBoundingClientRect().width })) }));
+  if (overflow.scroll > overflow.width) console.log(JSON.stringify({ resizeOverflow: overflow }));
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.locator("#scenarios").screenshot({ path: "/private/tmp/bidwise-finance-mobile-test.png" });
 });
 test("rental completeness is independent, blanks stay unknown and negative cash remains visible", async ({ page }) => {

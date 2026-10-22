@@ -9,6 +9,7 @@ afterEach(() => { vi.unstubAllEnvs(); vi.useRealTimers(); vi.restoreAllMocks(); 
 function configure() {
   vi.stubEnv("GEMINI_API_KEY", "test-key-not-real");
   vi.stubEnv("GEMINI_MODEL", "gemini-3.8-flash");
+  vi.stubEnv("GEMINI_FALLBACK_MODEL", "");
 }
 describe("Interactions output contract", () => {
   it("reads the final SDK output instead of combining intermediate JSON", async () => {
@@ -85,4 +86,54 @@ it("adapts analysis array constraints without accepting unsupported evidence", a
     return { output_text: JSON.stringify({ summary: "Check title separately.", findings: [{ explanation: "A record is available.", evidenceIds: ["invented"], numericClaims: [] }], unansweredQuestions: [], consistencyFlags: [] }) };
   });
   await expect(analyzeEvidence(new Map([["assessment", 100]]))).rejects.toMatchObject({ category: "invalid_output" });
+});
+
+describe("503-only configured free fallback", () => {
+  function fallback() { configure(); vi.stubEnv("GEMINI_FALLBACK_MODEL", "gemini-3.5-flash-lite"); }
+  it("keeps 3.8 preferred and makes one fallback attempt after two 503s", async () => {
+    fallback(); vi.useFakeTimers();
+    create.mockRejectedValueOnce({ status: 503 }).mockRejectedValueOnce({ status: 503 }).mockResolvedValueOnce({ output_text: '{"candidates":[]}' });
+    const pending = extractListing("123 Main St"); await vi.runAllTimersAsync();
+    expect(await pending).toMatchObject({ model: "gemini-3.5-flash-lite", fallbackFrom: "gemini-3.8-flash", attempts: 3 });
+    expect(create.mock.calls.map(call => call[0].model)).toEqual(["gemini-3.8-flash", "gemini-3.8-flash", "gemini-3.5-flash-lite"]);
+    expect(create.mock.calls.every(call => call[0].store === false && call[1].maxRetries === 0)).toBe(true);
+  });
+  it("does not use fallback when the primary retry succeeds", async () => {
+    fallback(); vi.useFakeTimers(); create.mockRejectedValueOnce({ status: 503 }).mockResolvedValueOnce({ output_text: '{"candidates":[]}' });
+    const pending = extractListing("123 Main St"); await vi.runAllTimersAsync();
+    expect(await pending).toMatchObject({ model: "gemini-3.8-flash", attempts: 2 }); expect(create).toHaveBeenCalledTimes(2);
+  });
+  it("never falls back after quota, auth, bad request, timeout or malformed output", async () => {
+    fallback();
+    for (const error of [{ status: 429 }, { status: 401 }, { status: 403 }, { status: 400 }, { status: 404 }, Object.assign(new Error(), { name: "RequestTimeoutError" }), new Error("private-network-marker")]) {
+      create.mockReset(); create.mockRejectedValue(error); await expect(extractListing("123 Main St")).rejects.toBeDefined(); expect(create).toHaveBeenCalledTimes(1);
+    }
+    create.mockReset(); create.mockResolvedValue({ output_text: "not JSON" });
+    await expect(extractListing("123 Main St")).rejects.toMatchObject({ category: "invalid_output" }); expect(create).toHaveBeenCalledTimes(1);
+  });
+  it("stops if the primary retry changes from 503 to a quota failure", async () => {
+    fallback(); vi.useFakeTimers(); create.mockRejectedValueOnce({ status: 503 }).mockRejectedValueOnce({ status: 429 });
+    const checked = expect(extractListing("123 Main St")).rejects.toMatchObject({ category: "quota", attempts: 2 }); await vi.runAllTimersAsync(); await checked;
+    expect(create).toHaveBeenCalledTimes(2);
+  });
+  it("caps a failed fallback at three total attempts", async () => {
+    fallback(); vi.useFakeTimers(); create.mockRejectedValue({ status: 503 });
+    const checked = expect(extractListing("123 Main St")).rejects.toMatchObject({ category: "provider", httpStatus: 503, attempts: 3, model: "gemini-3.5-flash-lite" }); await vi.runAllTimersAsync(); await checked;
+    expect(create).toHaveBeenCalledTimes(3);
+  });
+  it("keeps quotation and evidence validation after fallback", async () => {
+    fallback(); vi.useFakeTimers(); create.mockRejectedValueOnce({ status: 503 }).mockRejectedValueOnce({ status: 503 }).mockResolvedValueOnce({ output_text: JSON.stringify({ candidates: [{ address: "20 Wrong Street", addressSnippet: "123 Main St", claims: [] }] }) });
+    const checked = expect(extractListing("123 Main St")).rejects.toMatchObject({ category: "invalid_output", attempts: 3 }); await vi.runAllTimersAsync(); await checked;
+    expect(create).toHaveBeenCalledTimes(3);
+  });
+  it("rejects an unapproved fallback model before inference", async () => {
+    configure(); vi.stubEnv("GEMINI_FALLBACK_MODEL", "unverified-paid-model");
+    await expect(extractListing("123 Main St")).rejects.toMatchObject({ category: "configuration", attempts: 0 }); expect(create).not.toHaveBeenCalled();
+  });
+});
+it("rejects invented numeric evidence from the fallback analysis", async () => {
+  configure(); vi.stubEnv("GEMINI_FALLBACK_MODEL", "gemini-3.5-flash-lite"); vi.useFakeTimers();
+  create.mockRejectedValueOnce({ status: 503 }).mockRejectedValueOnce({ status: 503 }).mockResolvedValueOnce({ output_text: JSON.stringify({ summary: "Fixture", findings: [{ explanation: "Unsupported amount", evidenceIds: ["assessment"], numericClaims: [{ evidenceId: "assessment", value: 999999 }] }], unansweredQuestions: [], consistencyFlags: [] }) });
+  const checked = expect(analyzeEvidence(new Map([["assessment", 100]]))).rejects.toMatchObject({ category: "invalid_output", attempts: 3 }); await vi.runAllTimersAsync(); await checked;
+  expect(create).toHaveBeenCalledTimes(3);
 });

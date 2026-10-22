@@ -128,6 +128,8 @@ Implements `prd.md > Detailed Evidence and Analysis`. Query the documented flood
 
 Implements `prd.md > Detailed Evidence and Analysis`. A shared `Fact` presentation renders value, evidence class, verification status, source, source date/check time and caveats. Comparisons operate on the same property, attribute kind, unit and applicable time frame. Outcomes are matches, differs, cannot verify or not comparable. Asking price versus assessed value is not a discrepancy. Unsupported fields stay unknown.
 
+October22 learner-requested starting-value change: add property-specific editable estimates with visible provenance/basis, dates, uncertainty and strict property/revision binding. Preserve user edits when estimates arrive; do not substitute assessment/nominal sale for a proposed purchase or invent missing interior/condition facts. Deterministic math remains unchanged. This refinement is recorded in `docs/property-estimate-plan.md` and remains unimplemented while the Gemini blocker is investigated.
+
 ### Renovation Engine
 
 Implements `prd.md > Renovation and Cash Scenarios`. Keep v3's editable quantity × low/base/high unit costs, contingency and separate unknown-condition reserve. The estimates are illustrative/user assumptions, never certified quotes or model-discovered physical defects. Compute at full numeric precision; round for display. Shared renovation changes update both scenarios.
@@ -264,6 +266,8 @@ The following endpoint metadata/documents were inspected; no real-property query
 Use official SDK with server key and `GEMINI_MODEL`. The documented structured-output API currently exposes `POST https://generativelanguage.googleapis.com/v1beta/interactions`, with model, input and a JSON response format/schema; use its corresponding supported SDK method after validating installed compatibility. No web-search/URL-context tools enabled. Extraction response maps candidates/claims/snippets; analysis maps grounded findings/questions/flags. Do not mix in legacy SDK examples without checking compatibility.
 
 [SDK](https://ai.google.dev/gemini-api/docs/libraries), [structured output](https://ai.google.dev/gemini-api/docs/structured-output), [pricing](https://ai.google.dev/gemini-api/docs/pricing), [limits](https://ai.google.dev/gemini-api/docs/rate-limits). Free access/actual quota is model/project dependent, and free-tier content may be used for product improvement. Use public material only. Track extraction and analysis usage separately. No unsupported fixed calls/day or universal credit balance is promised.
+
+October22 learner-selected availability refinement: keep3.8 preferred and allow the configured free3.5 Flash-Lite fallback only after two primary503 responses. One fallback attempt, no SDK retries, same45-second per-attempt limit and local schema/evidence guards. No failover on quota/auth/timeout/network/bad-request/invalid-output failures. Maximum three calls per operation; disclose actual model/fallback origin. `GEMINI_FALLBACK_MODEL` can disable it; only the currently verified, approved free fallback is allowed. See `docs/gemini-api-diagnosis-2026-10-22.md`. This does not establish complete live semantic acceptance or continuous availability.
 
 ### Gemini URL Context Feasibility Investigation
 

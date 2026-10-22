@@ -51,10 +51,10 @@ export async function POST(request: Request) {
     }
     try {
       const response = await analyzeEvidence(evidence);
-      return json({ status: "available", ...response.data, model: response.model, generatedAt: new Date().toISOString(), snapshotId: canonicalSnapshot, revision, records, flood, listingEvidence, ...scenarioResponse });
+      return json({ status: "available", ...response.data, model: response.model, fallbackFrom: response.fallbackFrom, generatedAt: new Date().toISOString(), snapshotId: canonicalSnapshot, revision, records, flood, listingEvidence, ...scenarioResponse });
     } catch (error) {
       const failure = safeGeminiFailure(error);
-      return json({ status: "unavailable", category: failure.category, revision, records, flood, listingEvidence, ...scenarioResponse,
+      return json({ status: "unavailable", category: failure.category, attempts: failure.attempts, failedModel: failure.model, revision, records, flood, listingEvidence, ...scenarioResponse,
         message: "AI analysis is unavailable. The source records remain usable; no substitute AI explanation was generated." });
     }
   } catch (error) { return inputFailure(error); }

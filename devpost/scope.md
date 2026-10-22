@@ -25,7 +25,7 @@ Enter an NJ address or paste a public listing/notice, confirm the property, insp
 
 The user returns with another property or revised assumptions. They do not need investment terminology or a checklist of their own to start. Technical terms are explained in context.
 
-Approved financial boundary: retain v3's cash renovation/resale scenario and add a small cash-purchase rental scenario using entered rent and operating-cost assumptions. Compare an estimated one-time resale outcome with recurring rental income after modeled expenses, explicitly labeled as different measures. Explain assumptions and missing inputs; do not automatically declare which strategy is better. Financing, automatic rent estimates and broader investment advice stay outside this slice.
+Approved financial boundary: retain v3's cash renovation/resale scenario and add a small cash-purchase rental scenario using entered rent and operating-cost assumptions. Compare an estimated one-time resale outcome with recurring rental income after modeled expenses, explicitly labeled as different measures. Explain assumptions and missing inputs; do not automatically declare which strategy is better. October22 learner refinement: prefill editable starting assumptions with the best supported property-specific estimates, including rent/resale where a defensible basis exists. Label their basis, uncertainty and estimated status; preserve human edits and missing-evidence honesty. This adds an estimate-evidence step, not permission to invent property facts or certify a valuation. Financing and broader investment advice remain outside.
 
 Material approved change from v3: basic cash rental economics moves from later to a minimal part of the first report, following scope review and learner approval. Richer rental features remain deferred. The master reference now records this amendment; PRD/spec will define detailed behavior and calculations.
 
@@ -53,7 +53,7 @@ The rental/resale scenarios share the same property and renovation inputs. Both 
 
 ## Later
 
-Preserve master plan v3 Appendix A. Broader browsing/auction aggregation, automated valuations/comps/rent estimates, deeper permits/title/history integrations, financed scenarios, first-home affordability, accounts and saved properties remain later. Only basic cash rental economics is promoted alongside the existing resale model; all richer rental features remain deferred. No feature is represented as implemented.
+Preserve master plan v3 Appendix A. Broader browsing/auction aggregation, a full automated valuation/comparables product, deeper permits/title/history integrations, financed scenarios, first-home affordability, accounts and saved properties remain later. Basic cash rental economics and the learner-requested supported starting estimates are promoted alongside the existing resale model; all richer rental features remain deferred. No feature is represented as implemented.
 
 ## Explicitly Cut
 

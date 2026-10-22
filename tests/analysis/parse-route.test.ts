@@ -24,3 +24,9 @@ it("keeps provider failures separate from successful extraction", async () => {
   expect(response.status).toBe(503);
   expect(JSON.stringify(await response.json())).not.toContain("private provider payload");
 });
+it("returns safe model/attempt diagnostics without raw provider messages", async () => {
+  const { GeminiFailure } = await import("../../src/lib/providers/gemini");
+  extract.mockRejectedValue(new GeminiFailure("provider", 503, 3, "gemini-3.5-flash-lite"));
+  const body = await (await POST(request("10 Sample St, Sample, NJ"))).json();
+  expect(body).toMatchObject({ category: "provider", attempts: 3, failedModel: "gemini-3.5-flash-lite" });
+});
