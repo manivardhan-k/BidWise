@@ -1,6 +1,6 @@
 export type PropertyIdentity = {
   pin: string; address: string; municipality: string; block: string; lot: string; qualifier: string;
-  location: { x: number; y: number }; precision: string; score: number; checkedAt: string;
+  location: { x: number; y: number }; precision: string; score: number; checkedAt: string; listingHash?: string;
 };
 export type PropertyChoice = { identity: PropertyIdentity; token: string; note: string };
 export type FactEvidence = {

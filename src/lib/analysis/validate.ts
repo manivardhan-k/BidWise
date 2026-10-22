@@ -1,21 +1,38 @@
 import { z } from "zod";
 
-export const extractionSchema = z.object({ candidates: z.array(z.object({
+export const listingCandidateSchema = z.object({
   address: z.string().min(1).max(300), addressSnippet: z.string().min(1).max(500),
   claims: z.array(z.object({
-    kind: z.enum(["asking_price", "opening_bid", "judgment", "bedrooms", "bathrooms", "interior_area", "condition"]),
+    kind: z.enum(["asking_price", "opening_bid", "judgment", "bedrooms", "bathrooms", "interior_area", "condition", "year_built", "residential_units"]),
     value: z.string().min(1).max(500), snippet: z.string().min(1).max(1000),
   })).max(30),
-})).max(5) });
+});
+export const extractionSchema = z.object({ candidates: z.array(listingCandidateSchema).max(5) });
+export type ListingCandidate = z.infer<typeof listingCandidateSchema>;
+export type ListingClaim = ListingCandidate["claims"][number];
+export type ParsedProperty = { candidate: ListingCandidate; receipt: string };
 
 // Exact quotations establish textual support, not truth or correct attribution.
 // Target-context attribution still needs live adversarial checks and user confirmation.
 export function validateExtraction(body: unknown, suppliedText: string) {
   const result = extractionSchema.parse(body);
+  const anchors = result.candidates.map(candidate => ({ candidate, start: suppliedText.indexOf(candidate.addressSnippet) })).sort((a, b) => a.start - b.start);
   for (const candidate of result.candidates) {
-    if (!suppliedText.includes(candidate.addressSnippet)) throw new Error("Unsupported address quotation.");
+    if (!suppliedText.includes(candidate.addressSnippet) || !candidate.addressSnippet.includes(candidate.address)) throw new Error("Unsupported address quotation.");
     for (const claim of candidate.claims) {
       if (!suppliedText.includes(claim.snippet) || !claim.snippet.includes(claim.value)) throw new Error("Unsupported claim quotation or value.");
+      if (anchors.length > 1) {
+        const index = anchors.findIndex(anchor => anchor.candidate === candidate);
+        const start = index === 0 ? 0 : anchors[index].start;
+        const end = anchors[index + 1]?.start ?? suppliedText.length;
+        let occurrence = suppliedText.indexOf(claim.snippet);
+        let supported = false;
+        while (occurrence >= 0) {
+          if (occurrence >= start && occurrence + claim.snippet.length <= end) { supported = true; break; }
+          occurrence = suppliedText.indexOf(claim.snippet, occurrence + 1);
+        }
+        if (!supported) throw new Error("Claim belongs to another or ambiguous property context.");
+      }
     }
   }
   return result;

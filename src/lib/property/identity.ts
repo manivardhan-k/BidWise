@@ -11,6 +11,7 @@ const identitySchema = z.object({
   block: z.string().max(40), lot: z.string().max(40), qualifier: z.string().max(40),
   location: pointSchema, precision: z.string().max(40), score: z.number().min(0).max(100),
   checkedAt: z.iso.datetime(),
+  listingHash: z.string().regex(/^[a-f0-9]{64}$/).optional(),
 });
 function signature(body: string) { return createHmac("sha256", secret).update(body).digest(); }
 export function signIdentity(identity: PropertyIdentity) {
@@ -34,7 +35,7 @@ export function matchesParcelIdentifiers(attributes: Record<string, unknown>, ca
     && (!candidate.Addr_Lot || field(attributes.PCLLOT) === field(candidate.Addr_Lot))
     && (!candidate.Addr_Qualifier || field(attributes.PCLQCODE) === field(candidate.Addr_Qualifier));
 }
-export async function findPropertyChoices(address: string) {
+export async function findPropertyChoices(address: string, listingHash?: string) {
   const candidates = await identify(address);
   const choices: PropertyChoice[] = [];
   let sourceFailures = 0;
@@ -53,6 +54,7 @@ export async function findPropertyChoices(address: string) {
           block: field(attributes.PCLBLOCK), lot: field(attributes.PCLLOT), qualifier: field(attributes.PCLQCODE),
           location: candidate.location, score: candidate.score, precision: candidate.attributes.Addr_type ?? "Unknown",
           checkedAt: new Date().toISOString(),
+          ...(listingHash ? { listingHash } : {}),
         };
         choices.push({ identity, token: signIdentity(identity), note: candidate.attributes.Addr_Block && candidate.attributes.Addr_Lot
           ? "Address and parcel identifiers agree. Confirm the block, lot and any unit qualifier."

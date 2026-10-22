@@ -3,7 +3,7 @@ const create = vi.hoisted(() => vi.fn());
 vi.mock("@google/genai", () => ({ GoogleGenAI: class {
   interactions = { create };
 } }));
-import { extractListing } from "../../src/lib/providers/gemini";
+import { extractListing, analyzeEvidence } from "../../src/lib/providers/gemini";
 
 afterEach(() => { vi.unstubAllEnvs(); vi.useRealTimers(); vi.restoreAllMocks(); create.mockReset(); });
 function configure() {
@@ -61,4 +61,28 @@ describe("Interactions output contract", () => {
     await expect(extractListing("123 Main St")).rejects.toMatchObject({ category: "invalid_output", attempts: 1 });
     expect(create).toHaveBeenCalledTimes(1);
   });
+});
+
+// Models the independently observed provider rejection. App-side limits must survive.
+it("keeps extraction usable when the provider rejects nested maxItems constraints", async () => {
+  configure();
+  create.mockImplementation(async request => {
+    const schema = request.response_format.schema;
+    if (schema.properties.candidates.maxItems !== undefined || schema.properties.candidates.items.properties.claims.maxItems !== undefined) throw { status: 400 };
+    return { output_text: '{"candidates":[{"address":"123 Main St","addressSnippet":"123 Main St","claims":[]}]}' };
+  });
+  expect((await extractListing("123 Main St")).data.candidates[0].address).toBe("123 Main St");
+});
+it("still rejects oversized extraction replies after provider schema adaptation", async () => {
+  configure();
+  create.mockResolvedValue({ output_text: JSON.stringify({ candidates: Array.from({length: 6}, () => ({ address: "123 Main St", addressSnippet: "123 Main St", claims: [] })) }) });
+  await expect(extractListing("123 Main St")).rejects.toMatchObject({ category: "invalid_output" });
+});
+it("adapts analysis array constraints without accepting unsupported evidence", async () => {
+  configure();
+  create.mockImplementation(async request => {
+    if (JSON.stringify(request.response_format.schema).includes('"maxItems"')) throw { status: 400 };
+    return { output_text: JSON.stringify({ summary: "Check title separately.", findings: [{ explanation: "A record is available.", evidenceIds: ["invented"], numericClaims: [] }], unansweredQuestions: [], consistencyFlags: [] }) };
+  });
+  await expect(analyzeEvidence(new Map([["assessment", 100]]))).rejects.toMatchObject({ category: "invalid_output" });
 });

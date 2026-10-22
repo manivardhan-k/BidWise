@@ -97,3 +97,9 @@ The subsequent request for full years supersedes the abbreviated-year presentati
 Suggestions now sit **6px below the textbox**, with a capped scrollable list and keyboard auto-scrolling. Mobile suggestions flow between the textbox and button; combined focus handling keeps the button clickable when the menu is open. This supersedes the previous mobile placement below the whole form. Tests measure placement at 1440px and 390px, verify actual scroll overflow and active-option scrolling, and submit with the menu open.
 
 Verified follow-up: **33 unit tests, eleven production-browser regressions, typecheck, lint, production build and live Richardson date smoke pass**. No new Gemini or Mapbox requests were needed. The approved plan has no fixed final field count: 30 is the current official parcel record shape; listing comparisons, renovation, financial scenarios and AI explanations remain additional planned report sections.
+
+## October 22 copied-page and Gemini compatibility checkpoint
+
+See [bounded results and primary sources](gemini-reliability-check-2026-10-22.md). The provider-facing schema now omits maxItems while local limits remain enforced. A controlled 3.8 extraction returned valid JSON once; two complete app probes still stopped on 503 after the single allowed retry. Both AI roles remain required, and live acceptance is pending. No configured-model/billing change.
+
+Copied-page processing now includes explicit target/parcel confirmation, authenticated claim binding and typed comparisons. Tests cover quote support, cross-property borrowing, receipt changes/expiry/swaps, URL fallback and oversized input without truncation. Mechanical checkpoint: 51 unit / 14 browser tests, typecheck, lint and production build pass. Fresh visual inspection is pending because Work local-browser access is disabled.

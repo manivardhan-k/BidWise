@@ -16,3 +16,13 @@ describe("AI evidence guards", () => {
     expect(validateAnalysis(body, new Map([["assessment", 10]]))).toEqual(body);
   });
 });
+it("rejects an address invented outside its quoted source passage", () => {
+  expect(() => validateExtraction({ candidates: [{ address: "20 Other Street, Sample, NJ", addressSnippet: "10 Sample Street, Sample, NJ", claims: [] }] }, "10 Sample Street, Sample, NJ")).toThrow();
+});
+it("rejects borrowing a quoted claim from a different extracted property's block", () => {
+  const page = "10 First St, Sample, NJ\nBuilt 1900\n20 Other St, Sample, NJ\nBuilt 2000";
+  expect(() => validateExtraction({ candidates: [
+    { address: "10 First St, Sample, NJ", addressSnippet: "10 First St, Sample, NJ", claims: [{ kind: "year_built", value: "2000", snippet: "Built 2000" }] },
+    { address: "20 Other St, Sample, NJ", addressSnippet: "20 Other St, Sample, NJ", claims: [] },
+  ] }, page)).toThrow();
+});
