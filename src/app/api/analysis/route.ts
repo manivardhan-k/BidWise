@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { analyzeEvidence, safeGeminiFailure } from "@/lib/providers/gemini";
 import { verifyIdentity } from "@/lib/property/identity";
+import { matchReviewMessage } from "@/lib/property/match-review";
 import { recordsFor, hazardsFor, snapshotId } from "@/lib/property/report";
 import { InputError, inputFailure, json, readJson } from "@/lib/http";
 import { emptyFinance, evaluateFinance, financeSchema, financeInputKey } from "@/lib/finance/engines";
@@ -26,6 +27,8 @@ export async function POST(request: Request) {
     const evidence = new Map<string, string | number | null>([["address", identity.address], ["parcel", identity.pin],
       ["limits", "No physical inspection, title/liens, complete history, occupancy or market valuation has been checked. Financial assumptions are editable and may include low-confidence automatic starting values, not verified forecasts; deterministic results are scenarios, not promised returns. Source-matched means retrieved from a record, not certified true."],
     ]);
+    const matchReview = matchReviewMessage(identity);
+    if (matchReview) evidence.set("identity_match_review", matchReview);
     if (records.status === "available") for (const fact of records.data.facts) {
       evidence.set(fact.id, fact.value); evidence.set(`${fact.id}_caveat`, fact.caveat);
     } else evidence.set("records_status", records.message);

@@ -1,4 +1,16 @@
 import { test, expect } from "@playwright/test";
+
+test("explains a withheld parcel-source disagreement without blaming the address", async ({ page }) => {
+  await page.route("**/api/suggest", route => route.fulfill({ json: { suggestions: [] } }));
+  await page.route("**/api/identify", route => route.fulfill({ json: { choices: [], sourceFailures: 0, addressMatches: 1, identifierConflicts: 2 } }));
+  await page.goto("/");
+  await page.getByLabel("NJ address", { exact: true }).fill("10 Test Street, Sample, NJ");
+  await page.getByRole("button", { name: "Find property" }).click();
+  const explanation = page.getByRole("alert").filter({ hasText: "address and parcel sources returned conflicting identifiers" });
+  await expect(explanation).toBeVisible();
+  await expect(explanation).toContainText("does not mean your address is wrong");
+  await expect(page.getByRole("button", { name: "Use this parcel for research" })).toHaveCount(0);
+});
 test("debounces suggestions, supports keyboard selection, and keeps confirmation separate", async ({ page }) => {
   let calls = 0, identifyCalls = 0;
   await page.route("**/api/suggest", route => { calls++; return route.fulfill({ json: { suggestions: ["10 Sample Street, Sample, NJ", "12 Sample Street, Sample, NJ"] } }); });

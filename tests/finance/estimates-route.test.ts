@@ -26,6 +26,17 @@ it("preserves baseline estimates when AI is unavailable and binds the response t
   const body = await (await POST(request({ token: signIdentity(identity), revision: 8, stage: "model" }))).json();
   expect(body).toMatchObject({ revision: 8, pin: identity.pin, modelStatus: "unavailable" }); expect(body.estimates.length).toBeGreaterThan(3);
 });
+it("withholds parcel-based prefills and model allowances while identifiers disagree", async () => {
+  const token = signIdentity({ ...identity, matchReview: { addressBlock: "1.05", parcelBlock: "1" } });
+  for (const stage of ["sources", "model"]) {
+    const body = await (await POST(request({ token, revision: 8, stage }))).json();
+    expect(body.gaps.join(" ")).toContain("Sources disagree on the block");
+    expect(body.estimates.some((x: { kind: string }) => ["historical_record", "area_benchmark", "model_allowance"].includes(x.kind))).toBe(false);
+    expect(body.recordKey).toBeDefined();
+  }
+  expect(calls.area).not.toHaveBeenCalled();
+  expect(calls.model).not.toHaveBeenCalled();
+});
 it("rejects missing/changed listing binding before source or model requests", async () => {
   const candidate = { address: identity.address, addressSnippet: identity.address, claims: [{ kind: "asking_price" as const, value: "$200,000", snippet: "Asking $200,000" }] };
   const listing = issueListingReceipt(candidate), token = signIdentity({ ...identity, listingHash: listingFingerprint(candidate) });

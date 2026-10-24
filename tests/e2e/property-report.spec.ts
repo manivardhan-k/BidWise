@@ -24,6 +24,24 @@ async function confirm(page: Page) {
   await page.getByRole("button", { name: "Confirm this property" }).click();
   await expect(page.locator("#research").getByText("$170,000", { exact: true })).toBeVisible();
 }
+test("keeps a source conflict visible before and after selecting a parcel with missing tax details", async ({ page }) => {
+  await setup(page);
+  const { normalizeRecords } = await import("../../src/lib/property/evidence");
+  const { matchReviewMessage } = await import("../../src/lib/property/match-review");
+  const reviewed = { ...identity, pin: "0000_1.05_1_C0010", block: "1.05", qualifier: "C0010", matchReview: { addressBlock: "1", parcelBlock: "1.05" } };
+  await page.route("**/api/identify", route => route.fulfill({ json: { choices: [{ identity: reviewed, token: "fictional-review-token", note: matchReviewMessage(reviewed) }], sourceFailures: 0, identifierConflicts: 1 } }));
+  await page.route("**/api/records", route => route.fulfill({ json: { status: "available", data: normalizeRecords({ PAMS_PIN: reviewed.pin, PCLBLOCK: "1.05", PCLLOT: "1", PCLQCODE: "C0010" }, identity.checkedAt) } }));
+  await page.goto("/");
+  await page.getByLabel("NJ address", { exact: true }).fill("10 Test Street, Sample, NJ");
+  await page.getByRole("button", { name: "Find property" }).click();
+  await expect(page.getByText("Sources disagree on the block:", { exact: false })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Confirm this property" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Use this parcel for research" }).click();
+  await expect(page.getByText("Match needs review", { exact: true })).toBeVisible();
+  await expect(page.locator("#research").getByRole("note")).toContainText("does not resolve the block disagreement");
+  await expect(page.getByText("The parcel was located, but its address", { exact: false })).toBeVisible();
+  await expect(page.getByText("Parcel confirmed", { exact: true })).toHaveCount(0);
+});
 test("requires confirmation and preserves evidence during map and AI failures", async ({ page }) => {
   await setup(page); await page.goto("/"); await confirm(page);
   await expect(page.getByRole("heading", { name: "The map is unavailable." })).toBeVisible();

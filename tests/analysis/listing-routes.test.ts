@@ -28,6 +28,16 @@ it("binds extraction to the signed parcel and returns comparisons even when AI f
   expect(evidence.get("listing_claim_0")).toBe("year_built: 2000");
   expect(evidence.get("year_built")).toBe(1900);
 });
+it("passes a signed source disagreement to analysis instead of claiming a verified join", async () => {
+  calls.identify.mockResolvedValue([{ address, score: 100, location: { x: -74.4, y: 40.4 }, attributes: { Addr_type: "PointAddress", Addr_Block: "1", Addr_Lot: "1", Addr_Qualifier: "C0010" } }]);
+  calls.parcelsAt.mockResolvedValue({ features: [{ attributes: { PAMS_PIN: "0000_1.05_1_C0010", PCL_MUN: "0000", PCLBLOCK: "1.05", PCLLOT: "1", PCLQCODE: "C0010" } }] });
+  const found = await (await identify(request({ address }))).json();
+  expect(found.choices).toHaveLength(1);
+  await analyze(request({ token: found.choices[0].token, revision: 1 }));
+  const evidence = calls.analyzeEvidence.mock.calls[0][0] as Map<string, unknown>;
+  expect(evidence.get("identity_match_review")).toContain("does not resolve the block disagreement");
+  expect(evidence.get("identity_match_review")).toContain("1.05");
+});
 it("rejects a different authentic listing and missing bound claims before any source/model request", async () => {
   const listing = issueListingReceipt(candidate);
   const found = await (await identify(request({ address, listing }))).json();

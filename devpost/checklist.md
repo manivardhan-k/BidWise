@@ -82,6 +82,7 @@ Current checkpoint: early source/report/map review completed on October 20. Lear
 
 ## Final Review
 
+- [ ] Retry the October23 condo matching fix: a precise, unique lot/unit match with a conflicting block now offers an explicit research-only selection, preserves the warning and explains missing tax details. Mechanical verification passed; learner retry remains pending.
 - [ ] Final review complete — agreed feedback resolved, verified, committed and retried; learner explicitly confirms ready to ship.
 
 ## Code Tour and App Map
@@ -117,3 +118,5 @@ Activity mode: Select the proportionate guided route or focused alternative duri
 - October22 Gemini priority: learner supplied a successful earlier interaction and a current Studio success screenshot. Exact/minimal/v1/generateContent API3.8 controls still returned503; same-key3.5 extraction and analysis returned valid supported output in a separate control. Learner explicitly selected3.8 preferred plus free3.5 Flash-Lite only after503 failures. Implemented maximum two primary attempts plus one fallback, unchanged validators, no quota/auth/timeout/invalid-output fallback, actual model labels and safe failure diagnostics. Later all-model503 occurred, so this is mitigation, not proven permanent repair. See docs/gemini-api-diagnosis-2026-10-22.md.
 
 - October23: implemented the learner-requested starting estimates as a source-first end-to-end increment after the saved financial checkpoint. Source-backed seeds/area benchmarks appear before the bounded Gemini cost operation; field edits/clears survive replies and refresh, explicit restore is available, old-property/changed-record replies are rejected, and AI review receives current deterministic calculations plus untrusted origin context. Free Census tract lookup plus independent Census Reporter mirror require no new credentials; source use/limits are in docs/starting-estimates-checkpoint-2026-10-23.md. Real Richardson source probe supplies13 labeled values. Both today's bounded live extraction and new allowance probe timed out; model quality/full live acceptance stay open. This is not a checked full AI slice or final learner acceptance.
+
+- October23 matching revision: reproduced a 100-score address whose NJ address block (528) differs from the uniquely intersected parcel block (528.05), with lot43/unitC0834 agreeing. Preserve strict identifier agreement and expose only precise, unique same-lot/same-unit block conflicts as research candidates with a signed persistent warning. Wrong lot/unit, approximate locations and ambiguous intersections remain withheld. Parcel-based automatic values and model allowances are withheld for this unresolved join; both Gemini roles remain in scope. See docs/data-feasibility.md. Learner retry is pending.
