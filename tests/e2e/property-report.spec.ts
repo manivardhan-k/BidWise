@@ -8,6 +8,7 @@ const records = { status: "available", data: { pin: identity.pin, publicationDat
 ] } };
 const availableFlood = { status: "available", data: { status: "no_polygon_returned", zones: [], sourceUrl: "https://example.invalid/flood", fetchedAt: identity.checkedAt, caveat: "No polygon returned does not establish no flood risk." } };
 async function setup(page: Page, flood = availableFlood) {
+  await page.route("**/api/estimates", route => route.fulfill({ status: 503, json: { error: "Estimates disabled in this unrelated fixture" } }));
   await page.route("**/api/suggest", route => route.fulfill({ json: { suggestions: [] } }));
   await page.route("**/api/identify", route => route.fulfill({ json: { choices: [{ identity, token: "fixture-confirmation-token", note: "Fictional fixture for verification only." }], sourceFailures: 0 } }));
   await page.route("**/api/records", route => route.fulfill({ json: records }));

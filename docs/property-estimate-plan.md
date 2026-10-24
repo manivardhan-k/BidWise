@@ -1,6 +1,6 @@
 # Property-specific starting estimates — requested October 22, 2026
 
-Status: learner-requested product change; implementation pending the Gemini reliability investigation. The learner asked to prefill “Explore the numbers” with the best available estimates for the confirmed property instead of requiring every input manually.
+Status: source-prefill and guarded model-allowance implementation completed October23; full live Gemini allowance quality remains pending. See `starting-estimates-checkpoint-2026-10-23.md` for measured behavior and limits. The learner asked to prefill “Explore the numbers” with the best available estimates for the confirmed property instead of requiring every input manually.
 
 ## Intended behavior
 

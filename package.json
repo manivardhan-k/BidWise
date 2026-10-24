@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "probe:data": "tsx scripts/probe-data.ts",
-    "probe:gemini": "tsx scripts/probe-gemini-replay.ts"
+    "probe:gemini": "tsx scripts/probe-gemini-replay.ts",
+    "probe:estimates": "tsx scripts/probe-estimates.ts"
   },
   "engines": {
     "node": ">=24"

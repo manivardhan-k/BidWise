@@ -137,3 +137,10 @@ it("rejects invented numeric evidence from the fallback analysis", async () => {
   const checked = expect(analyzeEvidence(new Map([["assessment", 100]]))).rejects.toMatchObject({ category: "invalid_output", attempts: 3 }); await vi.runAllTimersAsync(); await checked;
   expect(create).toHaveBeenCalledTimes(3);
 });
+it("uses the same bounded transport and strict proposal boundary for starting allowances", async () => {
+  const { estimateStartingAssumptions } = await import("../../src/lib/providers/gemini");
+  configure();
+  create.mockResolvedValue({ output_text: JSON.stringify({ estimates: [{ field: "flip.resale", value: 500000, low: 400000, high: 600000, evidenceIds: ["property_year"], explanation: "Unsupported model valuation" }] }) });
+  await expect(estimateStartingAssumptions(new Map([["property_year", { value: 1900, description: "Tax record" }]]))).rejects.toMatchObject({ category: "invalid_output", attempts: 1 });
+  expect(create.mock.calls[0][0].store).toBe(false); expect(create).toHaveBeenCalledTimes(1);
+});

@@ -3,6 +3,7 @@ const identity = { pin: "0000_1_1", address: "10 Finance St, Sample, New Jersey"
 const records = { status: "available", data: { pin: identity.pin, facts: [], fetchedAt: identity.checkedAt, publicationDate: null, geometryDate: null } };
 const flood = { status: "unavailable", message: "No flood fixture" };
 async function openReport(page: Page) {
+  await page.route("**/api/estimates", route => route.fulfill({ status: 503, json: { error: "Estimates disabled in this unrelated fixture" } }));
   await page.route("**/api/suggest", route => route.fulfill({ json: { suggestions: [] } }));
   await page.route("**/api/identify", route => route.fulfill({ json: { choices: [{ identity, token: "fictional-finance-token", note: "Fictional fixture only" }], sourceFailures: 0 } }));
   await page.route("**/api/records", route => route.fulfill({ json: records }));

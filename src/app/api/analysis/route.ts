@@ -9,7 +9,7 @@ import { compareListingClaims } from "@/lib/analysis/comparisons";
 export const runtime = "nodejs";
 export async function POST(request: Request) {
   try {
-    const { token, revision, listing, finance = emptyFinance() } = await readJson(request, z.object({ token: z.string().max(4096), revision: z.number().int().min(0), listing: parsedPropertySchema.optional(), finance: financeSchema.optional() }), 320_000);
+    const { token, revision, listing, finance = emptyFinance(), financeContext } = await readJson(request, z.object({ token: z.string().max(4096), revision: z.number().int().min(0), listing: parsedPropertySchema.optional(), finance: financeSchema.optional(), financeContext: z.string().max(40_000).optional() }), 320_000);
     const identity = verifyIdentity(token);
     if (Boolean(identity.listingHash) !== Boolean(listing)) throw new InputError("The copied-page claims do not match this confirmation. Research the property again.");
     let candidate;
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     const scenarioResponse = { finance, financeResults, financeInputKey: scenarioKey };
     const listingEvidence = candidate ? { candidate, comparisons: compareListingClaims(candidate.claims, records) } : undefined;
     const evidence = new Map<string, string | number | null>([["address", identity.address], ["parcel", identity.pin],
-      ["limits", "No physical inspection, title/liens, complete history, occupancy or market valuation has been checked. Financial assumptions are user-entered, not verified forecasts; deterministic results are scenarios, not promised returns. Source-matched means retrieved from a record, not certified true."],
+      ["limits", "No physical inspection, title/liens, complete history, occupancy or market valuation has been checked. Financial assumptions are editable and may include low-confidence automatic starting values, not verified forecasts; deterministic results are scenarios, not promised returns. Source-matched means retrieved from a record, not certified true."],
     ]);
     if (records.status === "available") for (const fact of records.data.facts) {
       evidence.set(fact.id, fact.value); evidence.set(`${fact.id}_caveat`, fact.caveat);
@@ -38,6 +38,7 @@ export async function POST(request: Request) {
         evidence.set(`listing_comparison_${index}`, `${comparison.status}: ${comparison.explanation}`);
       });
     }
+    if (financeContext) evidence.set("finance_assumption_context", `Unverified browser-provided context about starting values and user edits, not official records or independent valuation evidence: ${financeContext}`);
     evidence.set("finance_limits", "Cash purchase, before income tax, no debt service. One-time resale profit and recurring annual rental cash have different time horizons. Missing inputs remain unknown. Do not infer rent, market value, repair needs or strategy recommendations. Renovation already includes contingency and reserve once; rental capital reserve is separate from routine maintenance.");
     for (const key of ["renovation", "flip", "rent"] as const) {
       evidence.set(`${key}_assumptions`, JSON.stringify(finance[key]));

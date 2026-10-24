@@ -3,6 +3,8 @@ import { useRef, useState } from "react";
 import PropertyMap from "../map/PropertyMap";
 import { Fact } from "../research/Fact";
 import { AddressInput } from "./AddressInput";
+import { StartingEstimates, type StartingState, type StartingResponse } from "../finance/StartingEstimates";
+import { applyStartingEstimates, changedFinanceFields, recordEvidenceKey } from "@/lib/finance/starting-estimates";
 import { FinanceWorkspace } from "../finance/FinanceWorkspace";
 import { emptyFinance, financeInputKey, financeSchema, type FinanceInputs } from "@/lib/finance/engines";
 import { ListingClaims } from "../research/ListingClaims";
@@ -30,7 +32,16 @@ export default function PropertyWorkspace() {
   const financeRef = useRef(finance);
   const [reviewedFinanceKey, setReviewedFinanceKey] = useState<string | null>(null);
   const currentFinanceKey = financeSchema.safeParse(finance).success ? financeInputKey(finance) : null;
-  function updateFinance(next: FinanceInputs) {
+  const [starting, setStarting] = useState<StartingState>({ status: "idle" });
+  const startingRef = useRef<StartingResponse | null>(null);
+  const [touchedFields, setTouchedFields] = useState<ReadonlySet<string>>(new Set());
+  const touched = useRef(new Set<string>());
+  const estimateSerial = useRef(0);
+  function updateFinance(next: FinanceInputs, automatic = false) {
+    if (!automatic) {
+      changedFinanceFields(financeRef.current, next).forEach(field => touched.current.add(field));
+      setTouchedFields(new Set(touched.current));
+    }
     financeRef.current = next; setFinance(next); ++analysisSerial.current;
     setAnalysis(previous => previous.status === "loading" ? { status: "unavailable", message: "Assumptions changed while AI was reviewing. Refresh analysis for the current numbers." } : previous);
   }
@@ -58,6 +69,7 @@ export default function PropertyWorkspace() {
     const current = ++revision.current;
     setFinding(false); setError(""); setSelected(null); setChoices([]); setRecords(null); setFlood(null); setAnalysis({ status: "idle" });
     setParsedChoices([]); setParsedListing(null); setExtractionModel(null); listingContext.current = null;
+    ++estimateSerial.current; startingRef.current = null; setStarting({ status: "idle" }); touched.current = new Set(); setTouchedFields(new Set());
     const blankFinance = emptyFinance(); financeRef.current = blankFinance; setFinance(blankFinance); setReviewedFinanceKey(null);
     sourceState.current = { records: null, flood: null }; setSourceStale(false);
     return { current, signal: controller.current.signal };
@@ -102,7 +114,7 @@ export default function PropertyWorkspace() {
     const serial = ++analysisSerial.current;
     setAnalysis({ status: "loading" });
     try {
-      const result = await post<AnalysisResult | { status: "unavailable"; message: string; revision: number; records: SourceResult<PropertyRecords>; flood: SourceResult<FloodScreen>; financeInputKey: string }>("/api/analysis", { token: choice.token, revision: current, finance: suppliedFinance, ...(listingContext.current ? { listing: listingContext.current } : {}) }, signal);
+      const result = await post<AnalysisResult | { status: "unavailable"; message: string; revision: number; records: SourceResult<PropertyRecords>; flood: SourceResult<FloodScreen>; financeInputKey: string }>("/api/analysis", { token: choice.token, revision: current, finance: suppliedFinance, financeContext: JSON.stringify((startingRef.current?.estimates ?? []).map(item => ({ field: item.field, edited: touched.current.has(item.field === "renovation.allowance" ? "renovation.items" : item.field), kind: item.kind, originalStartingValue: item.value, basis: item.explanation, sourceDate: item.sourceDate }))), ...(listingContext.current ? { listing: listingContext.current } : {}) }, signal);
       if (revision.current !== current || result.revision !== current || analysisSerial.current !== serial) return;
       if (result.financeInputKey !== requestedFinanceKey) { setAnalysis({ status: "unavailable", message: "The analysis response did not match the current assumptions. No explanation or refreshed records were accepted." }); return; }
       if ((result.records.status === "unavailable" && sourceState.current.records?.status === "available")
@@ -114,6 +126,42 @@ export default function PropertyWorkspace() {
       sourceState.current = { records: result.records, flood: result.flood }; setSourceStale(false);
       setRecords(result.records); setFlood(result.flood); setReviewedFinanceKey(requestedFinanceKey); setAnalysis(result);
     } catch { if (revision.current === current && analysisSerial.current === serial) setAnalysis({ status: "unavailable", message: "AI analysis could not be completed. Your source records remain available." }); }
+  }
+  async function requestStarting(choice: PropertyChoice, current: number, signal: AbortSignal) {
+    const serial = ++estimateSerial.current;
+    setStarting({ status: "sources", ...(startingRef.current ? { data: startingRef.current } : {}) });
+    const apply = (result: StartingResponse) => {
+      if (revision.current !== current || estimateSerial.current !== serial) return false;
+      if (result.revision !== current || result.pin !== choice.identity.pin) {
+        setStarting({ status: "unavailable", message: "The starting-value response did not match the confirmed property. No values were applied." });
+        setAnalysis({ status: "unavailable", message: "Starting-value identity check failed. Refresh the property before requesting analysis." }); return false;
+      }
+      if (!sourceState.current.records || result.recordKey !== recordEvidenceKey(sourceState.current.records)) {
+        setStarting({ status: "unavailable", ...(startingRef.current ? { data: startingRef.current } : {}), message: "Source records changed while starting values were prepared. No new values were applied. Review the earlier basis, then refresh starting values after the current property analysis finishes." });
+        void requestAnalysis(choice, current, signal); return false;
+      }
+      startingRef.current = result;
+      updateFinance(applyStartingEstimates(financeRef.current, result.estimates, touched.current), true);
+      return true;
+    };
+    try {
+      for (const stage of ["sources", "model"] as const) {
+        const result = await post<StartingResponse>("/api/estimates", { token: choice.token, revision: current, stage, ...(listingContext.current ? { listing: listingContext.current } : {}) }, signal);
+        if (!apply(result)) return;
+        setStarting({ status: stage === "sources" ? "model" : "done", data: result });
+      }
+    } catch {
+      if (revision.current !== current || estimateSerial.current !== serial) return;
+      const latest = startingRef.current;
+      setStarting(latest ? { status: "done", data: { ...latest, modelStatus: "unavailable", message: "Additional estimates are unavailable. Existing starting values remain; your edits were preserved." } } : { status: "unavailable", message: "Starting values could not be prepared. You can still enter assumptions and use the property records." });
+    }
+    if (revision.current === current && estimateSerial.current === serial) void requestAnalysis(choice, current, signal);
+  }
+  function restoreStarting() {
+    const data = startingRef.current; if (!data) return;
+    for (const item of data.estimates) touched.current.delete(item.field === "renovation.allowance" ? "renovation.items" : item.field);
+    setTouchedFields(new Set(touched.current));
+    updateFinance(applyStartingEstimates(financeRef.current, data.estimates, touched.current, true), true);
   }
   async function confirm(choice: PropertyChoice) {
     controller.current?.abort(); controller.current = new AbortController();
@@ -128,7 +176,7 @@ export default function PropertyWorkspace() {
       load<PropertyRecords>("/api/records", result => { sourceState.current.records = result; setRecords(result); }),
       load<FloodScreen>("/api/hazards", result => { sourceState.current.flood = result; setFlood(result); }),
     ]);
-    if (revision.current === current) void requestAnalysis(choice, current, signal);
+    if (revision.current === current) void requestStarting(choice, current, signal);
   }
   const facts = records?.status === "available" ? records.data.facts : [];
   const fact = (id: string) => facts.find(f => f.id === id);
@@ -157,9 +205,9 @@ export default function PropertyWorkspace() {
         <section className="research-section"><div className="section-heading"><h3>Flood screening</h3><span className="small-label">NJDEP / FEMA</span></div>{!flood ? <p role="status">Checking the mapped flood layer…</p> : flood.status === "unavailable" ? <p className="notice">{flood.message}</p> : <>{floodData?.status === "zones_returned" ? <div className="zones">{floodData.zones.map(zone => <div key={`${zone.zone}:${zone.subtype}`}><span className="zone-code">Zone {zone.zone}</span><p>{zone.subtype.toLowerCase()}</p>{zone.sourceMatches > 1 && <small>{zone.sourceMatches} matching source polygons, grouped for readability</small>}</div>)}</div> : <p>{floodData?.status === "location_uncertain" ? "Location is too approximate to screen." : "No flood polygon was returned."}</p>}<p className="muted">{floodData?.caveat}</p><a className="source-link" href={floodData?.sourceUrl} target="_blank" rel="noopener noreferrer">Open flood source</a></>}</section>
         <section className="research-section"><div className="section-heading"><h3>Recorded history</h3><span className="small-label">NJGIN / MOD-IV</span></div>{records?.status === "available" ? <><div className="history-facts">{["recorded_sale", "deed_date", "deed_book", "deed_page", "sale_code"].map(id => fact(id) && <Fact key={id} fact={fact(id)!} />)}</div><p className="muted">Only the returned record is shown. This is not a complete transaction, permit or title history.</p><p className="source-dates">Record published {records.data.publicationDate ?? "date not supplied"}<br />Parcel geometry updated {records.data.geometryDate ?? "date not supplied"}</p></> : <p>{records ? "History is unavailable with the parcel source." : "Waiting for parcel records…"}</p>}</section></div>
         {records?.status === "available" && <RecordDetails facts={records.data.facts} />}
-        <FinanceWorkspace value={finance} onChange={updateFinance} />
+        <FinanceWorkspace value={finance} onChange={next => updateFinance(next)} estimates={starting.data?.estimates} touched={touchedFields} startingPanel={<StartingEstimates state={starting} touched={touchedFields} onRetry={() => { if (controller.current) void requestStarting(selected, revision.current, controller.current.signal); }} onRestore={restoreStarting} />} />
         <section className="coverage-section" aria-labelledby="coverage-title"><div className="section-heading"><h3 id="coverage-title">What this report covers</h3><span className="small-label">Availability is not a safety rating</span></div><dl className="coverage-list"><div><dt>Parcel and tax record</dt><dd>{records?.status === "available" ? "Retrieved from NJGIN / MOD-IV. Publication and retrieval dates appear in Source details; the assessment and tax year are not supplied." : records ? "Source unavailable. No substitute record was used." : "Retrieving the source record…"}</dd></div><div><dt>Flood mapping</dt><dd>{flood?.status === "available" ? flood.data.status === "location_uncertain" ? "Withheld because the location is too approximate." : "Mapped layer queried. This does not establish a property’s actual flood risk or insurance requirements." : flood ? "Source unavailable." : "Checking the mapped layer…"}</dd></div><div><dt>Listing and interior details</dt><dd>Asking price, bedrooms, bathrooms, interior floor area, photos and advertised condition are not supplied by this parcel source. Listing claims appear only when you supply copied page text and confirm its property.</dd></div><div><dt>Investment scenarios</dt><dd>Renovation, cash resale and cash rental scenarios use your entered assumptions. Missing costs stay unknown. No rent forecast, market valuation or promised return is supplied.</dd></div><div><dt>Other hazards and local restrictions</dt><dd>Environmental contamination, structural hazards, zoning, permits and rental licensing have not been checked. Flood mapping covers only one part of due diligence.</dd></div><div><dt>Title and transaction checks</dt><dd>Liens, ownership, occupancy, current tax balances, complete sale history and auction terms have not been verified. A deed reference does not establish clear title.</dd></div></dl></section>
-        <section className="analysis-section" aria-labelledby="analysis-title"><div className="section-heading"><div><span className="section-kicker">Separate from official records</span><h3 id="analysis-title">AI property analysis</h3></div><button className="secondary-button" disabled={analysis.status === "loading" || !records || !flood} onClick={() => { if (analysis.status === "available" && analysis.financeInputKey === currentFinanceKey && !sourceStale && Date.now() - Date.parse(analysis.generatedAt) < 60_000) return; if (controller.current) void requestAnalysis(selected, revision.current, controller.current.signal); }}>{analysis.status === "loading" ? "Analysis requested…" : "Refresh AI analysis"}</button></div>{analysis.status === "available" ? <>{reviewedFinanceKey !== currentFinanceKey && <div className="notice notice-error" role="status">AI analysis is outdated. Financial assumptions have changed since this explanation was generated. Refresh AI analysis for the current numbers.</div>}<p>{analysis.summary}</p>{analysis.findings.map((finding, i) => <div className="analysis-finding" key={i}><p>{finding.explanation}</p><small>Evidence: {finding.evidenceIds.join(", ")}</small></div>)}{analysis.unansweredQuestions.length > 0 && <><h4>Questions to investigate</h4><ul>{analysis.unansweredQuestions.map((q, i) => <li key={i}>{q}</li>)}</ul></>}{analysis.consistencyFlags.length > 0 && <div className="notice"><h4>Needs review</h4><ul>{analysis.consistencyFlags.map((q, i) => <li key={i}>{q}</li>)}</ul></div>}<small>AI interpretation · {analysis.model}{analysis.fallbackFrom ? ` · Free fallback after ${analysis.fallbackFrom} service failures` : ""} · Snapshot {analysis.snapshotId.slice(0, 12)} · {new Date(analysis.generatedAt).toLocaleString()}</small></> : <p role="status">{analysis.status === "loading" ? "Gemini is reviewing the available evidence. You can use the source records while it runs." : analysis.status === "unavailable" ? analysis.message : "Analysis will be requested when source checks finish. Missing financial assumptions do not prevent a property review."}</p>}</section>
+        <section className="analysis-section" aria-labelledby="analysis-title"><div className="section-heading"><div><span className="section-kicker">Separate from official records</span><h3 id="analysis-title">AI property analysis</h3></div><button className="secondary-button" disabled={analysis.status === "loading" || !records || !flood} onClick={() => { if (analysis.status === "available" && analysis.financeInputKey === currentFinanceKey && !sourceStale && Date.now() - Date.parse(analysis.generatedAt) < 60_000) return; if (controller.current) void requestAnalysis(selected, revision.current, controller.current.signal); }}>{analysis.status === "loading" ? "Analysis requested…" : "Refresh AI analysis"}</button></div>{analysis.status === "available" ? <>{reviewedFinanceKey !== currentFinanceKey && <div className="notice notice-error" role="status">AI analysis is outdated. Financial assumptions have changed since this explanation was generated. Refresh AI analysis for the current numbers.</div>}<p>{analysis.summary}</p>{analysis.findings.map((finding, i) => <div className="analysis-finding" key={i}><p>{finding.explanation}</p><small>Evidence: {finding.evidenceIds.join(", ")}</small></div>)}{analysis.unansweredQuestions.length > 0 && <><h4>Questions to investigate</h4><ul>{analysis.unansweredQuestions.map((q, i) => <li key={i}>{q}</li>)}</ul></>}{analysis.consistencyFlags.length > 0 && <div className="notice"><h4>Needs review</h4><ul>{analysis.consistencyFlags.map((q, i) => <li key={i}>{q}</li>)}</ul></div>}<small>AI interpretation · {analysis.model}{analysis.fallbackFrom ? ` · Free fallback after ${analysis.fallbackFrom} service failures` : ""} · Snapshot {analysis.snapshotId.slice(0, 12)} · {new Date(analysis.generatedAt).toLocaleString()}</small></> : <p role="status">{analysis.status === "loading" ? "Gemini is reviewing the available evidence. You can use the source records while it runs." : analysis.status === "unavailable" ? analysis.message : (starting.status === "sources" || starting.status === "model") ? "Analysis will review the current inputs when starting values finish. You can also request it now; later changes will mark it outdated." : "Analysis will be requested when source checks finish. Missing financial assumptions do not prevent a property review."}</p>}</section>
       </>}
       <section id="remaining-checks" className="remaining-section"><div className="section-heading"><div><p className="section-kicker">Before you buy</p><h2>Keep these on your list.</h2></div><span className="small-label">Not checked by BidWise</span></div><p className="section-intro">Public records are a starting point. These questions still need direct evidence and the right professional.</p><div className="checks-grid">{remainingChecks.map(([title, detail]) => <article className="check-item" key={title}><span className="unchecked" aria-hidden="true" /><div><h3>{title}</h3><p>{detail}</p></div></article>)}</div></section>
       <footer className="site-footer"><span>BidWise</span><p>Evidence for your research. No promise of a complete record or a safe purchase.</p><a href="#top">Back to search</a></footer>

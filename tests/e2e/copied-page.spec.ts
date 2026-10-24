@@ -6,6 +6,7 @@ const records = { status: "available", data: { pin: identity.pin, facts: [ { id:
 const flood = { status: "unavailable", message: "Flood unavailable in fixture" };
 test("selects a pasted target before matching and keeps price kinds and other properties separate", async ({ page }) => {
   let identifyCalls = 0, analysisListing: unknown;
+  await page.route("**/api/estimates", route => route.fulfill({ status: 503, json: { error: "Estimates disabled in this fixture" } }));
   await page.route("**/api/parse", route => route.fulfill({ json: { candidates: [first, second], model: "gemini-3.5-flash-lite", fallbackFrom: "gemini-3.8-flash" } }));
   await page.route("**/api/identify", route => { identifyCalls++; expect(route.request().postDataJSON().listing).toEqual(first); return route.fulfill({ json: { choices: [{ identity, token: "fictional-confirmed-token", note: "Check fixture identifiers" }], sourceFailures: 0 } }); });
   await page.route("**/api/records", route => route.fulfill({ json: records }));

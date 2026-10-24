@@ -20,3 +20,5 @@ Public source records are attributed in the report and source links. NJGIN parce
 The house marker is original project artwork. Copied text is manually supplied by the user; it is labeled as claims and processed by Gemini. Google service terms and free-tier data-use rules are separate from the SDK license.
 
 A project-wide publication license has not been selected. Do not infer one from the licenses of these dependencies; resolve that and the source-use/publication review before public release.
+
+Starting-value data added October23: US Census coordinate tract geographies and ACS2020–2024 tablesB25077/B25058, served via the independent Census Reporter public API. The publisher states Census data is not copyrighted and permits use; original Census Reporter prose/visualizations have separate licensing and are not copied into this app. Report labels disclose the mirror, source period and limitations. See https://censusreporter.org/about/ and https://geocoding.geo.census.gov/geocoder/Geocoding_Services_API.html.
