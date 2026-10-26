@@ -2,6 +2,7 @@
 import * as gemini from "./gemini";
 import * as groq from "./groq";
 import type { EstimateEvidence } from "../finance/starting-estimates";
+import { groqQuotaMessage } from "./groq-quota";
 
 function selected() {
   const provider = process.env.AI_PROVIDER?.trim() || "gemini";
@@ -20,11 +21,11 @@ export async function estimateStartingAssumptions(evidence: ReadonlyMap<string, 
 export function safeAiFailure(error: unknown) {
   if (error instanceof groq.GroqFailure) return error;
   const failure = gemini.safeGeminiFailure(error);
-  return { category: failure.category, httpStatus: failure.httpStatus, attempts: failure.attempts, model: failure.model, provider: "gemini", validationFailure: undefined };
+  return { category: failure.category, httpStatus: failure.httpStatus, attempts: failure.attempts, model: failure.model, provider: "gemini", validationFailure: undefined, quota: undefined };
 }
 export function aiFailureMessage(failure: ReturnType<typeof safeAiFailure>) {
   if (failure.category === "invalid_output") return "The AI response did not pass the source and output checks, so it was not accepted. You can try again; the response has not replaced your source information.";
-  if (failure.category === "quota") return "The AI service has reached its free usage limit. Wait before trying again; a shorter copied page may fit the available limit.";
+  if (failure.category === "quota") return failure.provider === "groq" ? groqQuotaMessage(failure.quota) : "The AI service is rate-limiting this request. Wait before trying again; source records and entered values remain available.";
   if (failure.category === "timeout") return "The AI service did not respond within 45 seconds. You can try again; your records and entered values remain available.";
   if (failure.category === "authentication") return "The AI service rejected its API key or account access. The local configuration needs to be checked before retrying.";
   if (failure.category === "configuration") return "AI is not configured yet. Check the selected provider and local API key, then restart BidWise.";

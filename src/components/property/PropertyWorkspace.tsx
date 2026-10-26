@@ -54,7 +54,7 @@ export default function PropertyWorkspace() {
   const [inputMode, setInputMode] = useState<"address" | "page">("address");
   const [pageText, setPageText] = useState("");
   const [parsedChoices, setParsedChoices] = useState<ParsedProperty[]>([]);
-  const [extractionModel, setExtractionModel] = useState<{ model: string; fallbackFrom?: string } | null>(null);
+  const [extractionModel, setExtractionModel] = useState<{ model: string; fallbackFrom?: string; omittedClaims?: number } | null>(null);
   const [parsedListing, setParsedListing] = useState<ParsedProperty | null>(null);
   const listingContext = useRef<ParsedProperty | null>(null);
   const [findingStage, setFindingStage] = useState<"parsing" | "matching">("matching");
@@ -114,9 +114,9 @@ export default function PropertyWorkspace() {
     setFinding(true); setFindingStage(inputMode === "page" ? "parsing" : "matching");
     try {
       if (inputMode === "page") {
-        const result = await post<{ candidates: ParsedProperty[]; model?: string; fallbackFrom?: string }>("/api/parse", { text: pageText }, signal);
+        const result = await post<{ candidates: ParsedProperty[]; model?: string; fallbackFrom?: string; omittedClaims?: number }>("/api/parse", { text: pageText }, signal);
         if (revision.current !== current) return;
-        if (result.model) setExtractionModel({ model: result.model, fallbackFrom: result.fallbackFrom });
+        if (result.model) setExtractionModel({ model: result.model, fallbackFrom: result.fallbackFrom, omittedClaims: result.omittedClaims });
         if (!result.candidates.length) { setError("No supported property address was extracted. Keep your text, check that its NJ address is included, or search the address directly."); return; }
         if (result.candidates.length > 1) { setParsedChoices(result.candidates); return; }
         await findAddress(result.candidates[0].candidate.address, result.candidates[0], current, signal);
@@ -220,6 +220,7 @@ export default function PropertyWorkspace() {
       </form>
       {parsedChoices.length > 1 && <section className="confirmation-panel" aria-labelledby="listing-selection-title"><h2 id="listing-selection-title">Which property are you researching?</h2><p>The copied text mentions multiple properties. Claims stay attached to their extracted target; check the quoted address before continuing.</p>{parsedChoices.map((listing, index) => <article className="choice" key={index}><div><h3>{listing.candidate.address}</h3><blockquote>{listing.candidate.addressSnippet}</blockquote><small>{listing.candidate.claims.length} quoted claims</small></div><button className="primary-button" onClick={() => void researchParsed(listing)}>Research this property</button></article>)}</section>}
       {extractionModel?.fallbackFrom && <div className="notice" role="status">Copied text processed by {extractionModel.model} after {extractionModel.fallbackFrom} returned temporary service failures. The same quotation and property checks apply.</div>}
+      {extractionModel?.omittedClaims ? <div className="notice" role="status">{extractionModel.omittedClaims} copied {extractionModel.omittedClaims === 1 ? "detail could" : "details could"} not be matched to the page and {extractionModel.omittedClaims === 1 ? "was" : "were"} left out. The verified address and details remain usable. Check the original page for anything missing.</div> : null}
       {error && <div id="research-error" className="notice notice-error" role="alert">{error}</div>}
       {finding && <div className="notice" role="status">{findingStage === "parsing" ? "AI is extracting addresses and supported claims from the pasted text. No property has been confirmed yet." : "Looking for matching NJ addresses and parcel identifiers. No property has been confirmed yet."}</div>}
       {sourceStale && <div className="notice" role="status">Earlier source results are shown because a refresh failed. Check the original retrieval times in Source details.</div>}

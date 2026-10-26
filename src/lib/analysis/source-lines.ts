@@ -23,3 +23,27 @@ export function validateReferencedExtraction(body: unknown, text: string) {
     claims: candidate.claims.map(claim => ({ kind: claim.kind, value: claim.value, snippet: quote(claim.startLine, claim.endLine, 1000) })),
   })) }, text);
 }
+// Addresses remain mandatory. Optional claims independently pass the same strict
+// checks against ALL target anchors; an unsupported field never enters a receipt.
+export function verifiedReferencedExtraction(body: unknown, text: string) {
+  const parsed = referencedExtractionSchema.parse(body), { lines } = numberedSource(text);
+  const quote = (start: number, end: number, maximum: number) => {
+    if (end < start || !lines[start - 1] || !lines[end - 1]) throw new Error("Invalid quotation line reference.");
+    const value = text.slice(lines[start - 1].start, lines[end - 1].end);
+    if (value.length > maximum) throw new Error("Quotation line range is too broad.");
+    return value;
+  };
+  const addresses = parsed.candidates.map(candidate => ({ address: candidate.address, addressSnippet: quote(candidate.addressStartLine, candidate.addressEndLine, 500), claims: [] }));
+  validateExtraction({ candidates: addresses }, text);
+  let omittedClaims = 0;
+  const candidates = parsed.candidates.map((candidate, index) => {
+    const claims = candidate.claims.flatMap(claim => {
+      try {
+        const excerpt = { kind: claim.kind, value: claim.value, snippet: quote(claim.startLine, claim.endLine, 1000) };
+        return validateExtraction({ candidates: addresses.map((address, other) => ({ ...address, claims: other === index ? [excerpt] : [] })) }, text).candidates[index].claims;
+      } catch { omittedClaims++; return []; }
+    });
+    return { ...addresses[index], claims };
+  });
+  return { data: validateExtraction({ candidates }, text), omittedClaims };
+}

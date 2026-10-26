@@ -82,6 +82,7 @@ Current checkpoint: early source/report/map review completed on October 20. Lear
 
 ## Final Review
 
+- [ ] Learner retry of copied-page recovery: verified optional details are retained with an omission notice, identical pastes reuse output for 10 minutes, and free limits distinguish daily/minute/request size. Mechanical checks and supplied-page confirmation flow passed; see `docs/copied-page-rate-limits-2026-10-26.md`.
 - [ ] Retry the October23 condo matching fix: a precise, unique lot/unit match with a conflicting block now offers an explicit research-only selection, preserves the warning and explains missing tax details. Mechanical verification passed; learner retry remains pending.
 - [ ] Final review complete — agreed feedback resolved, verified, committed and retried; learner explicitly confirms ready to ship.
 

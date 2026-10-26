@@ -7,7 +7,7 @@ const flood = { status: "unavailable", message: "Flood unavailable in fixture" }
 test("selects a pasted target before matching and keeps price kinds and other properties separate", async ({ page }) => {
   let identifyCalls = 0, analysisListing: unknown;
   await page.route("**/api/estimates", route => route.fulfill({ status: 503, json: { error: "Estimates disabled in this fixture" } }));
-  await page.route("**/api/parse", route => route.fulfill({ json: { candidates: [first, second], model: "gemini-3.5-flash-lite", fallbackFrom: "gemini-3.8-flash" } }));
+  await page.route("**/api/parse", route => route.fulfill({ json: { candidates: [first, second], model: "gemini-3.5-flash-lite", fallbackFrom: "gemini-3.8-flash", omittedClaims: 2 } }));
   await page.route("**/api/identify", route => { identifyCalls++; expect(route.request().postDataJSON().listing).toEqual(first); return route.fulfill({ json: { choices: [{ identity, token: "fictional-confirmed-token", note: "Check fixture identifiers" }], sourceFailures: 0 } }); });
   await page.route("**/api/records", route => route.fulfill({ json: records }));
   await page.route("**/api/hazards", route => route.fulfill({ json: flood }));
@@ -18,6 +18,7 @@ test("selects a pasted target before matching and keeps price kinds and other pr
   await page.getByLabel("Copied property page", { exact: true }).fill(text);
   await page.getByRole("button", { name: "Process copied text" }).click();
   await expect(page.getByRole("heading", { name: "Which property are you researching?" })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "2 copied details could not be matched" })).toBeVisible();
   await expect(page.getByText("Copied text processed by gemini-3.5-flash-lite", { exact: false })).toBeVisible();
   expect(identifyCalls).toBe(0);
   await page.getByRole("button", { name: "Research this property" }).nth(0).click();
