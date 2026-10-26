@@ -14,7 +14,8 @@ export async function POST(request: Request) {
       return json({ candidates: result.data.candidates.map(issueListingReceipt), model: result.model, provider: result.provider, fallbackFrom: result.fallbackFrom, extractedAt: new Date().toISOString() });
     } catch (error) {
       const failure = safeAiFailure(error);
-      return json({ error: `${aiFailureMessage(failure)} Your text is still in the form. You can research the NJ address directly.`, category: failure.category, provider: failure.provider, validationFailure: failure.validationFailure, attempts: failure.attempts, failedModel: failure.model }, 503);
+      const message = failure.category === "invalid_output" ? "Some extracted details could not be matched to the pasted page. No property was confirmed. Retry processing or research its NJ address directly." : aiFailureMessage(failure);
+      return json({ error: `${message} Your text is still in the form.`, category: failure.category, provider: failure.provider, validationFailure: failure.validationFailure, attempts: failure.attempts, failedModel: failure.model }, 503);
     }
   } catch (error) { return inputFailure(error); }
 }

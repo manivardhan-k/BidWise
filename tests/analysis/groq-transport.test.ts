@@ -11,7 +11,7 @@ afterEach(() => { request.mockReset(); vi.unstubAllGlobals(); vi.unstubAllEnvs()
 
 it("uses the fixed Groq endpoint with strict schema, one bounded request and exact quoted extraction", async () => {
   const data = { candidates: [{ address: "10 Sample St, Sample, NJ", addressSnippet: "10 Sample St, Sample, NJ", claims: [] }] };
-  request.mockResolvedValue(answer(data));
+  request.mockResolvedValue(answer({ candidates: [{ address: "10 Sample St, Sample, NJ", addressStartLine: 1, addressEndLine: 1, claims: [] }] }));
   const result = await extractListing("10 Sample St, Sample, NJ");
   expect(result).toMatchObject({ data, model: "openai/gpt-oss-120b", attempts: 1 });
   expect(request).toHaveBeenCalledTimes(1);
@@ -22,6 +22,19 @@ it("uses the fixed Groq endpoint with strict schema, one bounded request and exa
   expect(body).toMatchObject({ model: "openai/gpt-oss-120b", reasoning_effort: "low", stream: false, response_format: { type: "json_schema", json_schema: { strict: true } } });
   expect(body.response_format.json_schema.schema.properties.candidates.maxItems).toBe(5);
   expect(body.messages).not.toContainEqual(expect.objectContaining({ role: "tool" }));
+});
+it("reconstructs quotes from source lines instead of letting the model rewrite the pasted page", async () => {
+  const text = "Apartment for rent\n$2,375/mo\n\n10 Sample St, Sample, NJ\n2\nbeds\nTotal interior livable area: 1,200 sqft\nNearby apartments for rent\n20 Other St, Sample, NJ";
+  request.mockResolvedValue(answer({ candidates: [{ address: "10 Sample St, Sample, NJ", addressStartLine: 3, addressEndLine: 3, claims: [
+    { kind: "monthly_rent", value: "$2,375", startLine: 2, endLine: 2 },
+    { kind: "bedrooms", value: "2", startLine: 4, endLine: 5 },
+    { kind: "interior_area", value: "1200 sq ft", startLine: 6, endLine: 6 },
+  ] }] }));
+  const result = await extractListing(text);
+  expect(result.data.candidates[0]).toMatchObject({ address: "10 Sample St, Sample, NJ", addressSnippet: "10 Sample St, Sample, NJ" });
+  expect(result.data.candidates[0].claims.map(claim => [claim.value, claim.snippet])).toEqual([["$2,375", "$2,375/mo"], ["2", "2\nbeds"], ["1,200 sqft", "Total interior livable area: 1,200 sqft"]]);
+  const sent = JSON.parse(request.mock.calls[0][1].body);
+  expect(sent.messages[1].content).toContain("3|10 Sample St, Sample, NJ");
 });
 it("keeps numeric grounding checks after strict schema generation", async () => {
   request.mockResolvedValueOnce(answer(wire(analysis)));
@@ -57,7 +70,7 @@ it("requires an empty numeric-citation list when there are no known numbers", as
   expect(schema.properties.findings.items.properties.numericClaims.maxItems).toBe(0);
 });
 it("rejects unsupported quotations and model-owned valuations", async () => {
-  request.mockResolvedValueOnce(answer({ candidates: [{ address: "20 Other St", addressSnippet: "10 Sample St", claims: [] }] }));
+  request.mockResolvedValueOnce(answer({ candidates: [{ address: "20 Other St", addressStartLine: 1, addressEndLine: 1, claims: [] }] }));
   await expect(extractListing("10 Sample St")).rejects.toMatchObject({ category: "invalid_output", validationFailure: "quotation" });
   request.mockResolvedValueOnce(answer({ estimates: [{ field: "flip.resale", value: 100, low: 50, high: 200, evidenceIds: ["property_year"], explanation: "A valuation must never be supplied as a model allowance." }] }));
   await expect(estimateStartingAssumptions(new Map([["property_year", { value: 1900, description: "Year" }]]))).rejects.toMatchObject({ category: "invalid_output", validationFailure: "schema" });

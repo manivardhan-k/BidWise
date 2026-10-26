@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { isRentalPrice } from "./prices";
+import { originalQuotedArea } from "./quoted-area";
 
 export const listingCandidateSchema = z.object({
   address: z.string().min(1).max(300), addressSnippet: z.string().min(1).max(500),
@@ -21,9 +22,20 @@ export function validateExtraction(body: unknown, suppliedText: string) {
   for (const candidate of result.candidates) {
     if (!suppliedText.includes(candidate.addressSnippet) || !candidate.addressSnippet.includes(candidate.address)) throw new Error("Unsupported address quotation.");
     for (const claim of candidate.claims) {
+      if (claim.kind === "interior_area" && suppliedText.includes(claim.snippet) && !claim.snippet.includes(claim.value)) {
+        claim.value = originalQuotedArea(claim.value, claim.snippet) ?? claim.value;
+      }
       if (claim.kind === "asking_price" && isRentalPrice(claim.snippet)) throw new Error("Advertised rent is not a purchase asking price.");
       if (claim.kind === "monthly_rent" && !/\/\s*(?:mo|month)\b|\bmonthly\b|\bper\s+month\b/i.test(claim.snippet)) throw new Error("Monthly rent requires an explicit rental period in its quotation.");
+      if (claim.kind === "monthly_rent" && claim.snippet.includes(claim.value)) {
+        const amount = claim.value.match(/^(\$?\d+(?:,\d{3})*(?:\.\d{1,2})?)\s*\/\s*(?:mo|month)\b\.?$/i);
+        if (amount) claim.value = amount[1];
+      }
       if (!suppliedText.includes(claim.snippet) || !claim.snippet.includes(claim.value)) throw new Error("Unsupported claim quotation or value.");
+      if (claim.kind === "year_built") {
+        const statedYears = [...claim.snippet.matchAll(/\b(?:year\s+built|built(?:\s+in)?|construction\s+year|year\s+of\s+construction)\s*[:=–—-]?\s*(?:circa\s+|c\.\s*)?(\d{4})\b/gi)];
+        if (!statedYears.some(match => match[1] === claim.value)) throw new Error("An explicit construction year is required; history dates are not build years.");
+      }
       if (anchors.length > 1) {
         const index = anchors.findIndex(anchor => anchor.candidate === candidate);
         const start = index === 0 ? 0 : anchors[index].start;

@@ -1,8 +1,9 @@
 // Server/CLI only. The Groq key is never included in a browser response.
 import { z } from "zod";
-import { extractionSchema, analysisSchema, validateExtraction, validateAnalysis } from "../analysis/validate";
+import { analysisSchema, validateAnalysis } from "../analysis/validate";
+import { numberedSource, referencedExtractionSchema, validateReferencedExtraction } from "../analysis/source-lines";
 import { modelEstimatesSchema, validateModelEstimates, type EstimateEvidence } from "../finance/starting-estimates";
-import { EXTRACTION_INSTRUCTION, ANALYSIS_INSTRUCTION, ALLOWANCE_INSTRUCTION } from "./model-instructions";
+import { LINE_EXTRACTION_INSTRUCTION, ANALYSIS_INSTRUCTION, ALLOWANCE_INSTRUCTION } from "./model-instructions";
 
 type Category = "configuration" | "authentication" | "quota" | "not_found" | "bad_request" | "provider" | "timeout" | "invalid_output" | "network";
 type ValidationFailure = "json" | "schema" | "evidence" | "reference" | "numeric" | "quotation" | "range" | "incomplete";
@@ -60,8 +61,8 @@ async function structured<T>(schema: z.ZodType<T>, name: string, instruction: st
 }
 export async function extractListing(text: string) {
   z.string().trim().min(1).max(50_000).parse(text);
-  const result = await structured(extractionSchema, "listing_extraction", EXTRACTION_INSTRUCTION, text);
-  try { return { ...result, data: validateExtraction(result.data, text) }; }
+  const result = await structured(referencedExtractionSchema, "listing_extraction", LINE_EXTRACTION_INSTRUCTION, numberedSource(text).input);
+  try { return { ...result, data: validateReferencedExtraction(result.data, text) }; }
   catch { throw new GroqFailure("invalid_output", undefined, result.attempts, result.model, "quotation"); }
 }
 export async function analyzeEvidence(evidence: ReadonlyMap<string, string | number | null>) {
