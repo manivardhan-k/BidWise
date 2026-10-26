@@ -19,3 +19,5 @@ test-results/
 *.tsbuildinfo
 # Local source payloads stay private until source-use/republication review.
 /docs/evidence/
+# Local validated AI allowance snapshots, excluded from source control.
+.bidwise-cache/

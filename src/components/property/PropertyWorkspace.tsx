@@ -165,7 +165,9 @@ export default function PropertyWorkspace() {
       for (const stage of ["sources", "model"] as const) {
         const result = await post<StartingResponse>("/api/estimates", { token: choice.token, revision: current, stage, ...(listingContext.current ? { listing: listingContext.current } : {}) }, signal);
         if (!apply(result)) return;
-        setStarting({ status: stage === "sources" ? "model" : "done", data: result });
+        const saved = stage === "sources" && result.modelStatus === "available";
+        setStarting({ status: stage === "sources" && !saved ? "model" : "done", data: result });
+        if (saved) break;
       }
     } catch {
       if (revision.current !== current || estimateSerial.current !== serial) return;

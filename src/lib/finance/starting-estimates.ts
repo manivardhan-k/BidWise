@@ -34,7 +34,7 @@ export function modelEstimateEvidence(records: SourceResult<PropertyRecords>, ar
     evidence.set("area_home_value", { value: area.data.homeValue, description: `${area.data.name}; ACS ${area.data.period} owner-occupied median, not this property's value.` });
     evidence.set("area_contract_rent", { value: area.data.contractRent, description: `${area.data.name}; ACS ${area.data.period} median per rented unit, not a rent forecast.` });
   }
-  listing?.claims.forEach((claim, index) => evidence.set(`listing_${index}`, { value: `${claim.kind}: ${claim.value}; quotation: ${claim.snippet}`, description: "User-supplied copied claim, not independently verified." }));
+  [...(listing?.claims ?? [])].sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))).forEach((claim, index) => evidence.set(`listing_${index}`, { value: `${claim.kind}: ${claim.value}; quotation: ${claim.snippet}`, description: "User-supplied copied claim, not independently verified." }));
   return evidence;
 }
 export function modelStartingEstimates(body: z.infer<typeof modelEstimatesSchema>, checkedAt: string, model = "Gemini"): StartingEstimate[] {

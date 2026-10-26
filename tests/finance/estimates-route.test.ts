@@ -1,4 +1,7 @@
-import { beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 const calls = vi.hoisted(() => ({ records: vi.fn(), area: vi.fn(), model: vi.fn() }));
 vi.mock("../../src/lib/property/report", async original => ({ ...await original<object>(), recordsFor: calls.records }));
 vi.mock("../../src/lib/providers/census", async original => ({ ...await original<object>(), cachedAreaBenchmarksFor: calls.area }));
@@ -9,12 +12,16 @@ import { normalizeRecords } from "../../src/lib/property/evidence";
 import { issueListingReceipt, listingFingerprint } from "../../src/lib/analysis/listing-receipt";
 const identity = { pin: "0000_1_1", address: "10 Sample St, Sample, NJ", municipality: "SAMPLE", block: "1", lot: "1", qualifier: "", location: { x: -74.4, y: 40.4 }, precision: "PointAddress", score: 100, checkedAt: "2026-10-23T00:00:00Z" };
 const request = (body: unknown) => new Request("http://localhost/api/estimates", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-beforeEach(() => {
+let directory: string;
+beforeEach(async () => {
+  directory = await mkdtemp(join(tmpdir(), "bidwise-estimates-route-"));
+  vi.stubEnv("BIDWISE_ESTIMATE_CACHE_DIR", directory);
   Object.values(calls).forEach(call => call.mockReset());
   calls.records.mockResolvedValue({ status: "available", data: normalizeRecords({ PAMS_PIN: identity.pin, PROP_CLASS: "2", DWELL: 1, NET_VALUE: 999999, LAST_YR_TX: 6000 }) });
   calls.area.mockResolvedValue({ status: "unavailable", message: "No area fixture" });
   calls.model.mockRejectedValue({ status: 503 });
 });
+afterEach(async () => { vi.unstubAllEnvs(); await rm(directory, { recursive: true, force: true }); });
 it("builds source-backed starting values without accepting browser-owned facts or invoking AI in the source phase", async () => {
   const response = await POST(request({ token: signIdentity(identity), revision: 7, stage: "sources", records: { historical_tax: 1 } }));
   expect(response.status).toBe(200); const body = await response.json();
@@ -50,4 +57,49 @@ it("returns only validated model ranges and shows actual fallback provenance", a
   const body = await (await POST(request({ token: signIdentity(identity), revision: 9, stage: "model" }))).json();
   expect(body).toMatchObject({ modelStatus: "available", model: "gemini-3.5-flash-lite", fallbackFrom: "gemini-3.8-flash" });
   expect(body.estimates.find((x: { field: string }) => x.field === "renovation.allowance")).toMatchObject({ value: 25000, kind: "model_allowance" });
+});
+it("reuses the same validated allowances after reconfirmation instead of drawing new values", async () => {
+  const proposal = (value: number) => ({ data: { estimates: [{ field: "renovation.allowance", value, low: 10000, high: 60000, evidenceIds: ["property_class"], explanation: "Provisional uninspected residential allowance, not physical findings." }] }, model: "gemini-3.5-flash-lite", fallbackFrom: "gemini-3.8-flash" });
+  calls.model.mockResolvedValueOnce(proposal(25000)).mockResolvedValue(proposal(40000));
+  const first = await (await POST(request({ token: signIdentity(identity), revision: 1, stage: "model" }))).json();
+  const repeat = await (await POST(request({ token: signIdentity({ ...identity, checkedAt: "2026-10-26T00:00:00Z" }), revision: 2, stage: "model" }))).json();
+  expect(repeat.estimates.filter((item: { kind: string }) => item.kind === "model_allowance")).toEqual(first.estimates.filter((item: { kind: string }) => item.kind === "model_allowance"));
+  expect(calls.model).toHaveBeenCalledTimes(1);
+  expect(repeat).toMatchObject({ revision: 2, modelSnapshot: { id: first.modelSnapshot?.id, generatedAt: first.modelSnapshot?.generatedAt, reused: true } });
+  const sourcePhase = await (await POST(request({ token: signIdentity(identity), revision: 3, stage: "sources" }))).json();
+  expect(sourcePhase.modelStatus).toBe("available");
+  expect(sourcePhase.modelSnapshot.id).toBe(first.modelSnapshot.id);
+  expect(calls.model).toHaveBeenCalledTimes(1);
+});
+it("creates a distinct estimate set only when the property, source content or configured model changes", async () => {
+  const proposal = (value: number) => ({ data: { estimates: [{ field: "renovation.allowance", value, low: 10000, high: 60000, evidenceIds: ["property_class"], explanation: "Provisional uninspected residential allowance, not physical findings." }] }, model: "gemini-3.5-flash-lite" });
+  calls.model.mockResolvedValue(proposal(25000));
+  const run = async (pin = identity.pin) => (await POST(request({ token: signIdentity({ ...identity, pin }), revision: 1, stage: "model" }))).json();
+  const first = await run();
+  const later = { status: "available", data: normalizeRecords({ PAMS_PIN: identity.pin, PROP_CLASS: "2", DWELL: 1, NET_VALUE: 999999, LAST_YR_TX: 6000 }, "2026-11-01T00:00:00Z") };
+  calls.records.mockResolvedValue(later);
+  expect((await run()).modelSnapshot.id).toBe(first.modelSnapshot.id);
+  expect(calls.model).toHaveBeenCalledTimes(1);
+  calls.model.mockResolvedValue(proposal(35000));
+  calls.records.mockResolvedValue({ ...later, data: normalizeRecords({ PAMS_PIN: identity.pin, PROP_CLASS: "2", DWELL: 1, NET_VALUE: 999999, LAST_YR_TX: 8000 }) });
+  const changed = await run();
+  expect(changed.modelSnapshot.id).not.toBe(first.modelSnapshot.id);
+  expect(changed.estimates.find((item: { field: string }) => item.field === "renovation.allowance").value).toBe(35000);
+  const other = await run("0000_1_2");
+  expect(other.modelSnapshot.id).not.toBe(changed.modelSnapshot.id);
+  vi.stubEnv("GEMINI_MODEL", "gemini-3.5-flash-lite");
+  expect((await run()).modelSnapshot.id).not.toBe(changed.modelSnapshot.id);
+  expect(calls.model).toHaveBeenCalledTimes(4);
+});
+it("does not redraw allowances just because copied claims arrive in a different order", async () => {
+  calls.model.mockResolvedValue({ data: { estimates: [{ field: "renovation.allowance", value: 25000, low: 10000, high: 60000, evidenceIds: ["property_class"], explanation: "Provisional uninspected residential allowance, not physical findings." }] }, model: "gemini-3.5-flash-lite" });
+  const claims = [{ kind: "asking_price" as const, value: "$200,000", snippet: "Asking $200,000" }, { kind: "year_built" as const, value: "1900", snippet: "Built 1900" }];
+  const run = async (reverse: boolean) => {
+    const candidate = { address: identity.address, addressSnippet: identity.address, claims: reverse ? [...claims].reverse() : claims };
+    const listing = issueListingReceipt(candidate), token = signIdentity({ ...identity, listingHash: listingFingerprint(candidate) });
+    return (await POST(request({ token, revision: reverse ? 2 : 1, stage: "model", listing }))).json();
+  };
+  const first = await run(false), second = await run(true);
+  expect(second.modelSnapshot.id).toBe(first.modelSnapshot.id);
+  expect(calls.model).toHaveBeenCalledTimes(1);
 });

@@ -9,6 +9,11 @@ function selected() {
   if (provider === "gemini") return gemini;
   throw new gemini.GeminiFailure("configuration", undefined, 0);
 }
+export function allowancePolicy() {
+  const provider = selected() === groq ? "groq" : "gemini";
+  return provider === "groq" ? { provider, model: process.env.GROQ_MODEL?.trim() || "openai/gpt-oss-120b" }
+    : { provider, model: process.env.GEMINI_MODEL?.trim() || "unconfigured", fallback: process.env.GEMINI_FALLBACK_MODEL?.trim() || null };
+}
 export async function extractListing(text: string) { const provider = selected(); return { ...await provider.extractListing(text), provider: provider === groq ? "groq" : "gemini" }; }
 export async function analyzeEvidence(evidence: ReadonlyMap<string, string | number | null>) { const provider = selected(); return { ...await provider.analyzeEvidence(evidence), provider: provider === groq ? "groq" : "gemini" }; }
 export async function estimateStartingAssumptions(evidence: ReadonlyMap<string, EstimateEvidence>) { const provider = selected(); return { ...await provider.estimateStartingAssumptions(evidence), provider: provider === groq ? "groq" : "gemini" }; }

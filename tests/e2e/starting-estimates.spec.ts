@@ -65,6 +65,27 @@ test("keeps sourced starting values when the model fails and never labels them A
   await expect(page.getByLabel("Annual HOA or association cost", { exact: true })).toHaveValue("");
   await expect(page.locator(".starting-estimates")).not.toContainText("Cost allowances prepared by");
 });
+test("reuses a saved estimate set on refresh and reload while preserving human edits", async ({ page }) => {
+  await setup(page); let modelCalls = 0;
+  const snapshot = { id: "a".repeat(64), generatedAt: "2026-10-23T12:00:00Z", reused: true };
+  const saved = [...seeds, item("renovation.allowance", 30000, "model_allowance", 10000, 65000)];
+  await page.route("**/api/estimates", route => {
+    const body = route.request().postDataJSON();
+    if (body.stage === "model") modelCalls++;
+    return route.fulfill({ json: { ...response(body, saved), modelStatus: "available", model: "fixture", modelSnapshot: snapshot } });
+  });
+  await confirm(page);
+  await expect(page.getByLabel("Base unit cost 1", { exact: true })).toHaveValue("30000");
+  await expect(page.getByText("Reusing saved AI estimates.", { exact: false })).toBeVisible();
+  await expect(page.locator(".starting-estimates")).toContainText("Generated");
+  await page.getByLabel("Base unit cost 1", { exact: true }).fill("32000");
+  await page.getByRole("button", { name: "Refresh starting values", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Refresh starting values", exact: true })).toBeEnabled();
+  await expect(page.getByLabel("Base unit cost 1", { exact: true })).toHaveValue("32000");
+  await page.reload(); await confirm(page);
+  await expect(page.getByLabel("Base unit cost 1", { exact: true })).toHaveValue("30000");
+  expect(modelCalls).toBe(0);
+});
 test("rejects starting values for an old property or a mismatched confirmed parcel", async ({ page }) => {
   await setup(page); let release: (() => Promise<void>) | undefined;
   await page.route("**/api/estimates", async route => { const body = route.request().postDataJSON(); if (body.token === "fictional-second-token") return route.fulfill({ json: { ...response(body), pin: "wrong-pin" } }); await new Promise<void>(resolve => { release = async () => { await route.fulfill({ json: response(body) }).catch(() => {}); resolve(); }; }); });
