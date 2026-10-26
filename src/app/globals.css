@@ -378,7 +378,7 @@ svg { flex-shrink: 0; }
 
 
 /* Usability: readable controls, report navigation and recoverable states. */
-:where(h2, h3)[tabindex="-1"]:focus { outline: 2px solid var(--violet); outline-offset: 8px; border-radius: 4px; }
+:where(h2, h3)[tabindex="-1"]:focus { outline: none; }
 .input-modes button, .source-button, .text-button, .site-header nav a, summary { min-height: 44px; }
 .source-button { min-width: 44px; padding-inline: 8px; font-size: 12px; }
 .text-button { min-width: 44px; }

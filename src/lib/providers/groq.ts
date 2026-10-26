@@ -14,16 +14,19 @@ export class GroqFailure extends Error {
 }
 const statusCategory = (status: number): Category => status === 401 || status === 403 ? "authentication" : status === 429 ? "quota" : status === 404 ? "not_found" : status === 400 || status === 422 ? "bad_request" : "provider";
 
-function restrictEvidence(schema: unknown, ids: string[]): unknown {
-  if (Array.isArray(schema)) return schema.map(item => restrictEvidence(item, ids));
+type NumericReference = { evidenceId: string; value: number };
+const analysisWireSchema = analysisSchema.extend({ findings: z.array(analysisSchema.shape.findings.element.extend({ numericClaims: z.array(z.string().min(1).max(400)).max(20) })).max(12) });
+function restrictEvidence(schema: unknown, ids: string[], numericValues?: ReadonlyMap<string, NumericReference>): unknown {
+  if (Array.isArray(schema)) return schema.map(item => restrictEvidence(item, ids, numericValues));
   if (!schema || typeof schema !== "object") return schema;
   return Object.fromEntries(Object.entries(schema).map(([key, value]) => [key,
     key === "evidenceId" ? { type: "string", enum: ids }
       : key === "evidenceIds" ? { ...(value as object), items: { type: "string", enum: ids } }
-      : restrictEvidence(value, ids),
+      : key === "numericClaims" && numericValues ? numericValues.size ? { ...(value as object), items: { type: "string", enum: [...numericValues.keys()] } } : { ...(value as object), maxItems: 0 }
+      : restrictEvidence(value, ids, numericValues),
   ]));
 }
-async function structured<T>(schema: z.ZodType<T>, name: string, instruction: string, input: string, evidenceIds?: string[]): Promise<{ data: T; model: string; attempts: number; fallbackFrom?: string }> {
+async function structured<T>(schema: z.ZodType<T>, name: string, instruction: string, input: string, evidenceIds?: string[], numericEvidence?: ReadonlyMap<string, NumericReference>): Promise<{ data: T; model: string; attempts: number; fallbackFrom?: string }> {
   const model = process.env.GROQ_MODEL?.trim() || "openai/gpt-oss-120b";
   const apiKey = process.env.GROQ_API_KEY?.trim();
   // This is a trial on the learner's Free account, not permission to upgrade.
@@ -34,8 +37,8 @@ async function structured<T>(schema: z.ZodType<T>, name: string, instruction: st
       method: "POST", redirect: "error", cache: "no-store", signal: AbortSignal.timeout(45_000),
       headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({ model, stream: false, reasoning_effort: "low", max_completion_tokens: 2400,
-        messages: [{ role: "system", content: `${instruction} Keep the response concise and within the schema's local limits. ${name === "property_analysis" ? "When records are available, supply 3 to 6 useful findings with existing evidence IDs; describe both useful facts and missing checks. NumericClaims may be empty when no numeric claim is needed. Never invent an evidence ID or certify source accuracy." : "Omit unsupported claims or allowances rather than inventing them."}` }, { role: "user", content: input }],
-        response_format: { type: "json_schema", json_schema: { name, strict: true, schema: evidenceIds?.length ? restrictEvidence(z.toJSONSchema(schema), evidenceIds) : z.toJSONSchema(schema) } },
+        messages: [{ role: "system", content: `${instruction} Keep the response concise and within the schema's local limits. ${name === "property_analysis" ? "When records are available, supply 3 to 4 decision-relevant findings with existing evidence IDs. For numericClaims select exact ID=value reference strings offered by the schema, and include the reference ID in evidenceIds. NumericClaims may be empty when no numeric claim is needed. Never invent an evidence ID or certify source accuracy." : "Omit unsupported claims or allowances rather than inventing them."}` }, { role: "user", content: input }],
+        response_format: { type: "json_schema", json_schema: { name, strict: true, schema: evidenceIds?.length ? restrictEvidence(z.toJSONSchema(schema), evidenceIds, numericEvidence) : z.toJSONSchema(schema) } },
       }),
     });
     // Raw provider errors may contain the key or supplied text. Do not retain,
@@ -62,8 +65,20 @@ export async function extractListing(text: string) {
   catch { throw new GroqFailure("invalid_output", undefined, result.attempts, result.model, "quotation"); }
 }
 export async function analyzeEvidence(evidence: ReadonlyMap<string, string | number | null>) {
-  const result = await structured(analysisSchema, "property_analysis", ANALYSIS_INSTRUCTION, JSON.stringify(Object.fromEntries(evidence)), [...evidence.keys()]);
-  try { return { ...result, data: validateAnalysis(result.data, evidence) }; }
+  const numericValues = new Map<string, NumericReference>();
+  for (const [id, value] of evidence) if (typeof value === "number" && Number.isFinite(value)) numericValues.set(`${id}=${value}`, { evidenceId: id, value });
+  const result = await structured(analysisWireSchema, "property_analysis", ANALYSIS_INSTRUCTION, JSON.stringify(Object.fromEntries(evidence)), [...evidence.keys()], numericValues);
+  try {
+    const data = { ...result.data, findings: result.data.findings.map(finding => {
+      const numericClaims = finding.numericClaims.map(reference => {
+        const claim = numericValues.get(reference);
+        if (!claim) throw new Error("Unsupported numeric claim.");
+        return claim;
+      });
+      return { ...finding, evidenceIds: [...new Set([...finding.evidenceIds, ...numericClaims.map(claim => claim.evidenceId)])], numericClaims };
+    }) };
+    return { ...result, data: validateAnalysis(data, evidence) };
+  }
   catch (error) { throw new GroqFailure("invalid_output", undefined, result.attempts, result.model, error instanceof Error && error.message === "Unknown evidence reference." ? "reference" : "numeric"); }
 }
 export async function estimateStartingAssumptions(evidence: ReadonlyMap<string, EstimateEvidence>) {

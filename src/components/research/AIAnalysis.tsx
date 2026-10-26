@@ -27,9 +27,10 @@ export function AIAnalysis({ analysis, outdated, waiting, canRefresh, onRefresh 
     <p className="analysis-limit">AI can miss or misread details. Open the referenced report sections to compare its explanation with the actual records and assumptions.</p>
     {analysis.status === "available" ? <>
       {outdated && <div className="notice notice-error" role="status">AI analysis is outdated. Financial assumptions have changed since this explanation was generated. Refresh AI analysis for the current numbers.</div>}
-      <p className="analysis-summary">{analysis.summary}</p>
+      <h4>BidWise’s take</h4><p className="analysis-summary">{analysis.summary}</p>
+      {analysis.findings.length > 0 && <h4>What drives this view</h4>}
       {analysis.findings.map((finding, i) => <div className="analysis-finding" key={i}><p>{finding.explanation}</p><div className="analysis-evidence" aria-label="Referenced report sections">{[...new Map(finding.evidenceIds.map(id => { const link = evidenceLink(id, analysis.records); return [link.label, link] as const; })).values()].map(link => <a key={link.label} href={link.href}>{link.label}</a>)}</div></div>)}
-      {analysis.unansweredQuestions.length > 0 && <><h4>Questions to investigate</h4><ul>{analysis.unansweredQuestions.map((question, i) => <li key={i}>{question}</li>)}</ul></>}
+      {analysis.unansweredQuestions.length > 0 && <><h4>Recommended next steps</h4><ol>{analysis.unansweredQuestions.map((question, i) => <li key={i}>{question}</li>)}</ol></>}
       {analysis.consistencyFlags.length > 0 && <div className="notice"><h4>Needs review</h4><ul>{analysis.consistencyFlags.map((flag, i) => <li key={i}>{flag}</li>)}</ul></div>}
       <small className="analysis-provenance">AI interpretation · {analysis.provider === "groq" ? "Groq · " : ""}{analysis.model}{analysis.fallbackFrom ? ` · Free fallback after ${analysis.fallbackFrom} service failures` : ""} · {new Date(analysis.generatedAt).toLocaleString()}</small>
     </> : <>

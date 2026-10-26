@@ -38,6 +38,20 @@ test("keeps copied text and gives a useful recovery message after a network fail
   await expect(page.getByRole("alert").filter({ hasText: "connection" })).toBeVisible();
   await expect(page.getByLabel("Copied property page", { exact: true })).toHaveValue("10 Sample St, Sample, NJ. Asking $200,000.");
 });
+test("keeps section text unboxed after clicks while preserving keyboard control focus", async ({ page }) => {
+  await setup(page); await page.goto("/");
+  await page.getByLabel("NJ address", { exact: true }).fill("10 Sample St, Sample, NJ");
+  await page.getByRole("button", { name: "Find property", exact: true }).click();
+  const confirmation = page.getByRole("heading", { name: "Confirm the property", exact: true });
+  await expect(confirmation).toBeFocused();
+  await expect(confirmation).toHaveCSS("outline-style", "none");
+  await page.getByRole("button", { name: "Confirm this property", exact: true }).click();
+  const summary = page.getByRole("heading", { name: "10 Sample St", exact: true });
+  await expect(summary).toBeFocused();
+  await expect(summary).toHaveCSS("outline-style", "none");
+  await page.keyboard.press("Tab");
+  await expect(page.locator("button:focus")).toHaveCSS("outline-style", "solid");
+});
 test("restores edited and cleared scenario values only for the same confirmed parcel", async ({ page }) => {
   await setup(page); await page.goto("/"); await find(page);
   await page.getByLabel("Annual property-tax assumption", { exact: true }).fill("7777");
@@ -69,6 +83,17 @@ test("offers readable AI source links, section navigation and a scoped map retry
   await page.locator(".analysis-section").screenshot({ path: "/private/tmp/bidwise-usability-ai.png" });
   await page.locator(".report-tools").scrollIntoViewIfNeeded();
   await page.screenshot({ path: "/private/tmp/bidwise-usability-desktop.png" });
+});
+test("presents a consolidated take with recommended next steps", async ({ page }) => {
+  await setup(page);
+  await page.route("**/api/analysis", route => route.fulfill({ json: { status: "available", model: "fixture-model", provider: "groq", generatedAt: identity.checkedAt, revision: route.request().postDataJSON().revision, financeInputKey: JSON.stringify(route.request().postDataJSON().finance), snapshotId: "fixture", records, flood,
+    summary: "Resolve current pricing and condition gaps before judging the opportunity.", findings: [{ explanation: "The assessment cannot establish resale upside; current comparable sales are missing.", evidenceIds: ["assessment"], numericClaims: [] }], unansweredQuestions: ["Obtain current comparable sales and contractor quotes before setting a purchase budget."], consistencyFlags: [] } }));
+  await page.goto("/"); await find(page);
+  const section = page.getByRole("region", { name: "AI property analysis", exact: true });
+  await expect(section.getByRole("heading", { name: "BidWise’s take", exact: true })).toBeVisible();
+  await expect(section.locator(".analysis-summary")).toContainText("Resolve current pricing and condition gaps");
+  await expect(section.getByRole("heading", { name: "Recommended next steps", exact: true })).toBeVisible();
+  await expect(section.getByRole("listitem")).toContainText("Obtain current comparable sales and contractor quotes");
 });
 test("identifies invalid assumptions inline and keeps mobile controls usable", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 }); await setup(page); await page.goto("/"); await find(page);

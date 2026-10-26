@@ -8,6 +8,10 @@ import { emptyFinance, evaluateFinance, financeSchema, financeInputKey } from "@
 import { parsedPropertySchema, verifyListingReceipt } from "@/lib/analysis/listing-receipt";
 import { compareListingClaims } from "@/lib/analysis/comparisons";
 export const runtime = "nodejs";
+function addNumericAssumptions(evidence: Map<string, string | number | null>, prefix: string, value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value)) evidence.set(prefix, value);
+  else if (value && typeof value === "object") for (const [key, item] of Object.entries(value)) addNumericAssumptions(evidence, `${prefix}_${key}`, item);
+}
 export async function POST(request: Request) {
   try {
     const { token, revision, listing, finance = emptyFinance(), financeContext } = await readJson(request, z.object({ token: z.string().max(4096), revision: z.number().int().min(0), listing: parsedPropertySchema.optional(), finance: financeSchema.optional(), financeContext: z.string().max(40_000).optional() }), 320_000);
@@ -45,6 +49,7 @@ export async function POST(request: Request) {
     evidence.set("finance_limits", "Cash purchase, before income tax, no debt service. One-time resale profit and recurring annual rental cash have different time horizons. Missing inputs remain unknown. Do not infer rent, market value, repair needs or strategy recommendations. Renovation already includes contingency and reserve once; rental capital reserve is separate from routine maintenance.");
     for (const key of ["renovation", "flip", "rent"] as const) {
       evidence.set(`${key}_assumptions`, JSON.stringify(finance[key]));
+      addNumericAssumptions(evidence, `${key}_assumption`, finance[key]);
       const result = financeResults[key];
       evidence.set(`${key}_status`, result.status === "available" ? "Computed from user assumptions" : `${result.status}: ${result.issues.join(", ")}`);
       if (result.status === "available") {

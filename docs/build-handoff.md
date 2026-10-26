@@ -52,3 +52,7 @@ Canonical production preview: `http://127.0.0.1:3100`. The user handed over UI; 
 - Manual screen-reader/assistive-technology review; automated axe results cover tested states only.
 - The single learning wrap-up and finished-code app map after final revisions. Main slice/final-review boxes remain unchecked until their actual criteria pass.
 - Target Node24, current fresh-install/release gates, project publication license/source-use review, and any public-host shared signing/abuse/provider-budget controls. Do not push/deploy or mark ready to ship.
+
+## Latest analysis follow-up
+
+The learner's source-example numeric failure was reproduced. Scalar assumption IDs plus compact exact reference tokens now prevent citing a JSON container as a number or changing the cited value. Local exact-value guards remain unchanged. The analysis now presents a conditional take, evidence-backed implications and prioritized next actions. Heading-focus boxes were removed; keyboard controls stay visible.116unit and34isolated browser cases pass. See `docs/analysis-fix-2026-10-26.md` for controls, the free-quota observation and remaining acceptance. Concurrent UI edits remain separate; inspect Git before staging.

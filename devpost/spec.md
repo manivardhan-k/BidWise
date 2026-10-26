@@ -346,3 +346,8 @@ Independent read-only specification review completed before learner review. No b
 ## October 26 — learner-authorized free Groq trial
 
 The learner explicitly asked for a free alternative, supplied a Groq key locally and said “lets try that.” This supersedes the earlier Gemini-only provider restriction for the trial while retaining both extraction and analysis and all financial functionality. `AI_PROVIDER=groq` selects Groq GPT-OSS120B for extraction, property/scenario analysis and provisional cost allowances; `AI_PROVIDER=gemini` preserves the existing Gemini3.8→503-only3.5 behavior. A key alone never selects a provider. No automatic cross-provider fallback, paid tier or billing change is authorized. Shared instructions and unchanged local validators apply to both providers. See docs/groq-trial-2026-10-26.md.
+
+
+## October26 — consolidated analysis and numeric references
+
+The learner requests a consolidated research judgment, supporting implications and prioritized next checks. Shared instructions and the analysis presentation now implement that format using the existing result contract. Scalar numeric assumptions are available alongside their original context. Groq's private wire format selects exact ID=value reference tokens from a constrained enum, resolves them to the existing numeric-claim objects and runs the unchanged exact-value/reference validator. Unknown/rounded/wrong references remain rejected. No provider switch, extra retry, unconditional purchase verdict or automatic strategy choice was added. See `docs/analysis-fix-2026-10-26.md`.

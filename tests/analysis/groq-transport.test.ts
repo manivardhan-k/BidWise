@@ -5,6 +5,7 @@ import { safeAiFailure, aiFailureMessage } from "../../src/lib/providers/ai";
 const request = vi.fn();
 const answer = (data: unknown, finish = "stop") => new Response(JSON.stringify({ model: "openai/gpt-oss-120b", choices: [{ finish_reason: finish, message: { content: JSON.stringify(data) } }] }));
 const analysis = { summary: "Review the supplied assessment and verify current records.", findings: [{ explanation: "The assessment is a record, not a market valuation.", evidenceIds: ["assessment"], numericClaims: [{ evidenceId: "assessment", value: 100 }] }], unansweredQuestions: [], consistencyFlags: [] };
+const wire = (value: typeof analysis) => ({ ...value, findings: value.findings.map(finding => ({ ...finding, numericClaims: finding.numericClaims.map(claim => `${claim.evidenceId}=${claim.value}`) })) });
 beforeEach(() => { vi.stubEnv("GROQ_API_KEY", "fictional-groq-secret"); vi.stubEnv("GROQ_MODEL", "openai/gpt-oss-120b"); vi.stubGlobal("fetch", request); });
 afterEach(() => { request.mockReset(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
@@ -23,12 +24,37 @@ it("uses the fixed Groq endpoint with strict schema, one bounded request and exa
   expect(body.messages).not.toContainEqual(expect.objectContaining({ role: "tool" }));
 });
 it("keeps numeric grounding checks after strict schema generation", async () => {
-  request.mockResolvedValueOnce(answer(analysis));
+  request.mockResolvedValueOnce(answer(wire(analysis)));
   expect((await analyzeEvidence(new Map([["assessment", 100]]))).data).toEqual(analysis);
   const sent = JSON.parse(request.mock.calls[0][1].body);
   expect(sent.response_format.json_schema.schema.properties.findings.items.properties.evidenceIds.items.enum).toEqual(["assessment"]);
-  request.mockResolvedValueOnce(answer(analysis));
+  request.mockResolvedValueOnce(answer(wire(analysis)));
   await expect(analyzeEvidence(new Map([["assessment", 200]]))).rejects.toMatchObject({ category: "invalid_output", validationFailure: "numeric", attempts: 1 });
+});
+it("allows numeric citations only to scalar numbers, never text bundles or unknowns", async () => {
+  request.mockResolvedValueOnce(answer(wire(analysis)));
+  await analyzeEvidence(new Map<string, string | number | null>([["assessment", 100], ["rent_assumptions", '{"annualTax":3600}'], ["rent_assumption_annualTax", 3600], ["missing", null]]));
+  const schema = JSON.parse(request.mock.calls[0][1].body).response_format.json_schema.schema;
+  expect(schema.properties.findings.items.properties.numericClaims.items.enum).toEqual(["assessment=100", "rent_assumption_annualTax=3600"]);
+});
+it("retains exact decimal values and rejects rounded reference tokens", async () => {
+  const evidence = new Map([["assessment", 39499.99999999999]]);
+  const precise = { ...analysis, findings: [{ ...analysis.findings[0], numericClaims: [{ evidenceId: "assessment", value: 39499.99999999999 }] }] };
+  request.mockResolvedValueOnce(answer(wire(precise)));
+  expect((await analyzeEvidence(evidence)).data.findings[0].numericClaims[0].value).toBe(39499.99999999999);
+  request.mockResolvedValueOnce(answer({ ...wire(precise), findings: [{ ...wire(precise).findings[0], numericClaims: ["assessment=39500"] }] }));
+  await expect(analyzeEvidence(evidence)).rejects.toMatchObject({ category: "invalid_output", validationFailure: "numeric" });
+});
+it("links a validated numeric reference without relying on a duplicated model citation", async () => {
+  request.mockResolvedValueOnce(answer({ ...wire(analysis), findings: [{ ...wire(analysis).findings[0], evidenceIds: ["limits"] }] }));
+  const result = await analyzeEvidence(new Map<string, string | number | null>([["assessment", 100], ["limits", "Check current records."]]));
+  expect(result.data.findings[0].evidenceIds).toEqual(["limits", "assessment"]);
+});
+it("requires an empty numeric-citation list when there are no known numbers", async () => {
+  request.mockResolvedValueOnce(answer({ ...analysis, findings: [{ explanation: "Records need checking.", evidenceIds: ["limits"], numericClaims: [] }] }));
+  await analyzeEvidence(new Map([["limits", "No source numbers available."]]));
+  const schema = JSON.parse(request.mock.calls[0][1].body).response_format.json_schema.schema;
+  expect(schema.properties.findings.items.properties.numericClaims.maxItems).toBe(0);
 });
 it("rejects unsupported quotations and model-owned valuations", async () => {
   request.mockResolvedValueOnce(answer({ candidates: [{ address: "20 Other St", addressSnippet: "10 Sample St", claims: [] }] }));

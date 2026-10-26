@@ -156,3 +156,6 @@ Read-only source/terms review on October 19, 2026; no listing integration or liv
 - **Resolved:** learner approved the Markdown PRD, including the financial-group/input organization. No additional product sign-off or survey of investment metrics is required.
 - **During technical specification:** define the disclosed text-size limit, schema validation, exact rental/resale formulas and acceptance fixtures. Missing values must remain distinct from explicit zero.
 - **During build-stage feasibility checks:** confirm exact source coverage, a suitable real demo property and rights to demo text. Public website visibility or a manual paste is not blanket permission to republish source content. No access bypass or automatic listing import is approved.
+
+
+October26 learner refinement: AI analysis should consolidate the report into a conditional research take, explain the decisive implications and provide prioritized next actions specific to the evidence. Repeating the record cards or generic due-diligence checklist is insufficient. Preserve source uncertainty and the boundary against an unconditional purchase recommendation or automatic strategy selection.

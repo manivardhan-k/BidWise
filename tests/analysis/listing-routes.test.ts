@@ -67,6 +67,24 @@ it("recomputes user scenarios on the server and includes them with unavailable A
   expect(evidence.get("rent_assumptions")).toContain('"monthlyRent":2000');
   expect([...evidence.values()]).not.toContain(999999);
 });
+it("exposes exact individual numeric assumptions even when scenarios are incomplete", async () => {
+  const { emptyFinance } = await import("../../src/lib/finance/engines");
+  const finance = emptyFinance();
+  finance.rent.annualTax = 12453.35; finance.rent.annualHoa = 0;
+  finance.flip.purchase = 443800;
+  finance.renovation.items[0].quantity = 2;
+  finance.renovation.items[0].base = 500;
+  const found = await (await identify(request({ address }))).json();
+  await analyze(request({ token: found.choices[0].token, revision: 1, finance }));
+  const evidence = calls.analyzeEvidence.mock.calls[0][0] as Map<string, unknown>;
+  expect(evidence.get("rent_assumption_annualTax")).toBe(12453.35);
+  expect(evidence.get("rent_assumption_annualHoa")).toBe(0);
+  expect(evidence.get("flip_assumption_purchase")).toBe(443800);
+  expect(evidence.get("renovation_assumption_items_0_quantity")).toBe(2);
+  expect(evidence.get("renovation_assumption_items_0_base")).toBe(500);
+  expect(evidence.has("rent_assumption_monthlyRent")).toBe(false);
+  expect(evidence.has("renovation_assumption_items_0_label")).toBe(false);
+});
 it("hashes current assumptions with the canonical source snapshot and rejects invalid assumptions before sources", async () => {
   const { emptyFinance } = await import("../../src/lib/finance/engines");
   const finance = emptyFinance();
