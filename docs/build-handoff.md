@@ -47,6 +47,8 @@ Canonical production preview: `http://127.0.0.1:3100`. The user handed over UI; 
 
 ## Remaining acceptance
 
+October 26 source-publication update: the learner explicitly authorized saving and pushing the complete app and will handle recording/submission. That authorization supersedes the older no-push instruction below. The independent publication check passed all 150 unit tests, typecheck and lint, and found no private-key matches in candidate files or reachable history. Include the concurrent UI/PDF work in the saved source. The final recovery checkpoint records a production build and 39 browser regressions; leave the warmed local preview running. Unrecorded learning/semantic/accessibility and fresh-install checks remain factual gaps, not completed work.
+
 - Final learner exploration/retry of the complete journey and parcel-conflict review; resolve reported issues before marking final review complete.
 - Full noisy/malicious/multi-target real-page semantic acceptance for extraction, analysis and allowances; bounded permitted-source URL Context investigation remains separate. Current success does not close these criteria.
 - Manual screen-reader/assistive-technology review; automated axe results cover tested states only.
@@ -61,9 +63,14 @@ The learner's source-example numeric failure was reproduced. Scalar assumption I
 
 The learner's repeated-property amount changes were reproduced: the old route made a new model call and returned different renovation values for the same input. Validated AI allowance sets now persist in ignored `.bidwise-cache/estimates` (optional server-only `BIDWISE_ESTIMATE_CACHE_DIR`). Exact property/evidence/provider/method matches reuse original values and generation time, including after a Node restart; source-phase hits skip the model request. Failure/corruption never overwrites a saved set, and changed evidence/method gets a different fingerprint. Human edits/clears remain protected. See `docs/stable-estimates-2026-10-26.md`; published multi-instance consistency needs shared durable storage. Preserve the output cache across local restarts and never commit it. No new provider or paid service was added.
 
+## PDF formatting follow-up
+
+Download PDF now produces a dedicated native document with a summary, all three cash scenarios, separate resale results/assumptions, repeating repair-table headings, visible page numbers and linked record/estimate notes. Export captures edits at the click and makes no AI/source request; failure recovery preserves the report. Four PDF unit tests and two browser download controls passed, with 139 current unit tests, 38 isolated production browser regressions, typecheck, lint and both isolated/main production builds passed. All 14 pages of the normal fictional PDF were visually reviewed; 40-row/negative and pending/conflicted cases were rendered and checked for content, geometry, links and footers. The canonical preview was rebuilt after checking ownership. See `docs/pdf-report-2026-10-26.md` for evidence and acceptance limits; learner review and the wider release gates remain separate.
+
 ## Copied-page follow-up
 
 See docs/copied-page-fix-2026-10-26.md. Groq now chooses original source-line references instead of paraphrasing quotes; the strict validator checks reconstructed spans, narrowly recovers area formatting and /mo amounts, and requires an explicit construction-year label. The latest actual pasted rental page returned the correct main target and all4quoted numeric facts. The free OpenRouter comparison did not pass: Gemma's strict route was unavailable, and reasoning-disabled Nemotron added an unsupported build-year classification. Groq remains the app provider. See docs/openrouter-comparison-2026-10-26.md and scripts/probe-openrouter.ts (metadata only by default, opt-in fictional page only). Latest free OpenRouter budget48of50daily requests remaining; no purchases, paid routes or privacy-setting changes. The full production baseline passed137unit/37browser tests plus typecheck/lint/build. Final139unit tests, typecheck/lint/build and all3copied-page browser regressions passed after the year guard and shared-prompt/probe additions. Canonical preview http://127.0.0.1:3100 was restarted with the final build (owned session15961); temporary3110preview stopped. All34client chunks passed the3configured-server-key scan. Preserve concurrent PDF/UI work; its download test passed in the full baseline and its separate layout/acceptance evidence lives in docs/pdf-report-2026-10-26.md. Original final-review/semantic/release gates remain pending.
+
 
 ## Copied-page rate-limit recovery
 

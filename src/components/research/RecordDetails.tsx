@@ -1,17 +1,16 @@
-import { Files } from "lucide-react";
+import { Building2, Database, Files, House, Map } from "lucide-react";
 import { Fact } from "./Fact";
 import type { FactEvidence } from "@/lib/property/types";
 const groups = [
-  { title: "Address and parcel identity", ids: ["property_address", "county", "municipality", "municipality_code", "parcel", "block", "lot", "qualifier", "old_property_id"] },
-  { title: "Building and recorded use", ids: ["class", "year_built", "building_description", "residential_units", "commercial_units", "building_class", "property_use", "facility"] },
-  { title: "Land and additional lots", ids: ["acreage", "land_description", "additional_lots_1", "additional_lots_2"] },
-  { title: "Assessment and historical tax", ids: ["land_assessment", "building_assessment", "assessment", "historical_tax"] },
+  { title: "Address & parcel", icon: House, ids: ["property_address", "county", "municipality", "municipality_code", "parcel", "block", "lot", "qualifier", "old_property_id"] },
+  { title: "Building & use", icon: Building2, ids: ["class", "year_built", "building_description", "residential_units", "commercial_units", "building_class", "property_use", "facility"] },
+  { title: "Land", icon: Map, ids: ["acreage", "land_description", "additional_lots_1", "additional_lots_2"] },
+  { title: "Assessment & tax", icon: Database, ids: ["land_assessment", "building_assessment", "assessment", "historical_tax"] },
 ];
 export function RecordDetails({ facts }: { facts: FactEvidence[] }) {
   const available = facts.filter(fact => fact.value !== null).length;
-  return <section id="property-records" className="record-details" aria-labelledby="record-details-title"><div className="section-heading"><div><p className="section-kicker">The full available property record</p><h3 id="record-details-title" className="section-title"><Files size={20} aria-hidden="true" />Look beyond the headline.</h3></div><span className="small-label">{available} of {facts.length} record fields available</span></div>
-    <p className="muted record-intro">Available fields, plus the gaps. Missing entries are unknown or not applicable; coverage does not establish accuracy.</p>
-    {groups.map(group => <div className="record-group" key={group.title}><h4>{group.title}</h4><div className="record-facts">{group.ids.map(id => { const fact = facts.find(item => item.id === id); return fact ? <Fact key={id} fact={fact} /> : null; })}</div></div>)}
+  return <section id="property-records" className="record-details" aria-labelledby="record-details-title"><div className="section-heading"><h3 id="record-details-title" className="section-title"><Files size={26} aria-hidden="true" />Property records</h3><span className="small-label">{available} of {facts.length} record fields available</span></div>
+    <div className="record-groups">{groups.map(({ title, icon: Icon, ids }) => <section className="record-group" aria-label={title} key={title}><div className="record-group-heading"><span className="record-group-icon"><Icon size={27} strokeWidth={1.75} aria-hidden="true" /></span><h4>{title}</h4></div><div className="record-facts">{ids.map(id => { const fact = facts.find(item => item.id === id); return fact ? <Fact key={id} fact={fact} /> : null; })}</div></section>)}</div>
     <a className="source-link" href="https://njdep.maps.arcgis.com/sharing/rest/content/items/852937c223e94fcf8e167a23b500935d/info/metadata/metadata.xml?format=default&output=html" target="_blank" rel="noopener noreferrer">How NJGIN defines these record fields</a>
   </section>;
 }

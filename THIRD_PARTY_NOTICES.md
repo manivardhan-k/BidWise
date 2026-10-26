@@ -10,6 +10,7 @@ Direct runtime dependencies observed in the lockfile on October 22, 2026; typogr
 | Tailwind CSS | 4.3.3 | MIT, https://github.com/tailwindlabs/tailwindcss |
 | Zod | 4.6.7 | MIT, https://github.com/colinhacks/zod |
 | Radix React Popover | 1.3.1 | MIT, https://github.com/radix-ui/primitives |
+| React PDF renderer | 4.9.0 | MIT, https://github.com/diegomura/react-pdf |
 | Google Gen AI SDK | 2.30.0 | Apache-2.0, https://github.com/googleapis/js-genai |
 | Lucide React | 1.61.0 | ISC with bundled Feather notices; https://github.com/lucide-icons/lucide |
 | DM Sans variable (Fontsource) | 5.3.0 | SIL OFL-1.1; bundled package LICENSE, https://fontsource.org/fonts/dm-sans |
@@ -29,3 +30,5 @@ Starting-value data added October23: US Census coordinate tract geographies and 
 The October 26 interface refresh uses the Latin variable font files from the pinned Fontsource packages through `next/font/local`; browsers request them from BidWise, not a font CDN. Font and icon license texts remain in the installed packages and must accompany distributions.
 
 Local usability checks use the development-only @axe-core/playwright package (MPL-2.0) and its bundled axe-core. Their license texts stay in the installed packages; the checker is not shipped as a production dependency or sent report data by the app.
+
+Dedicated PDF export added October 26 uses the pinned React PDF renderer and its transitive layout/PDFKit dependencies. It generates the document locally in the browser, with standard PDF Helvetica fonts and no external font or rendering service. Preserve dependency licenses and bundled font notices in distributions.

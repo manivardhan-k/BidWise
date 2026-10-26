@@ -122,6 +122,14 @@ test("shows the expanded record, readable deed date and explicit coverage gaps",
   await expect(page.getByText("$120,000", { exact: true })).toBeVisible();
   await expect(page.getByText("Residential units", { exact: true })).toBeVisible();
   await expect(page.getByText("Lot area (acres)", { exact: true })).toBeVisible();
+  const addressSource = page.locator(".record-details").getByRole("button", { name: "Source for Address in tax record", exact: true });
+  const buttonBox = await addressSource.boundingBox();
+  const iconBox = await addressSource.locator("svg").boundingBox();
+  expect(buttonBox).not.toBeNull(); expect(iconBox).not.toBeNull();
+  expect(Math.abs((buttonBox!.x + buttonBox!.width / 2) - (iconBox!.x + iconBox!.width / 2))).toBeLessThanOrEqual(1);
+  expect(Math.abs((buttonBox!.y + buttonBox!.height / 2) - (iconBox!.y + iconBox!.height / 2))).toBeLessThanOrEqual(1);
+  await addressSource.hover();
+  await page.locator(".record-details").screenshot({ path: "/private/tmp/bidwise-records-readable-desktop.png" });
   await expect(page.getByRole("heading", { name: "What this report covers" })).toBeVisible();
   await page.getByText("Sources, coverage & limitations", { exact: true }).click();
   await expect(page.getByText("Other hazards and local restrictions", { exact: true })).toBeVisible();
@@ -132,6 +140,10 @@ test("shows the expanded record, readable deed date and explicit coverage gaps",
   await page.keyboard.press("Escape");
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.locator(".record-details").getByRole("button", { name: "Source for Address in tax record", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Address in tax record source details", exact: true }).getByRole("link", { name: "Open official source" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.locator(".record-details").screenshot({ path: "/private/tmp/bidwise-records-readable-mobile.png" });
 });
 test("shows the actual fallback model beside a successful AI explanation", async ({ page }) => {
   await setup(page);

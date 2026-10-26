@@ -17,6 +17,58 @@ async function setup(page: Page) {
 async function confirm(page: Page) {
   await page.getByLabel("NJ address", { exact: true }).fill("10 Estimate St, Sample, NJ"); await page.getByRole("button", { name: "Find property" }).click(); await page.getByRole("button", { name: "Confirm this property" }).click();
 }
+test("opens field guidance and estimate sources in place without scrolling", async ({ page }) => {
+  await setup(page);
+  const estimates = [{ ...seeds[0], sourceUrl: "https://example.invalid/estimate-source" }, ...seeds.slice(1), item("renovation.allowance", 30000, "model_allowance", 10000, 65000)];
+  await page.route("**/api/estimates", route => route.fulfill({ json: response(route.request().postDataJSON(), estimates) }));
+  await confirm(page);
+  await expect(page.getByLabel("Base unit cost 1", { exact: true })).toHaveValue("30000");
+  await expect(page.getByRole("link", { name: "review basis", exact: true })).toHaveCount(0);
+  await page.getByLabel("Base unit cost 1", { exact: true }).focus();
+  await expect(page.getByText("Expected planning cost per unit for this repair.", { exact: true })).toHaveCount(0);
+  const info = page.getByRole("button", { name: "About Base unit cost 1", exact: true });
+  await info.scrollIntoViewIfNeeded();
+  const before = await page.evaluate(() => ({ y: scrollY, hash: location.hash }));
+  await info.click();
+  const details = page.getByRole("dialog", { name: "Base unit cost 1 details", exact: true });
+  await expect(details).toBeVisible();
+  await expect(details).toContainText("Expected planning cost per unit for this repair.");
+  await expect(details).toContainText("Starting renovation allowance");
+  await expect(details).toContainText("$10,000 to $65,000");
+  await expect(details).toContainText("Low confidence");
+  expect(await page.evaluate(() => ({ y: scrollY, hash: location.hash }))).toEqual(before);
+  await page.keyboard.press("Escape");
+  await expect(details).toBeHidden();
+  await expect(info).toBeFocused();
+
+  await page.getByRole("tab", { name: "Resale", exact: true }).click();
+  await page.getByLabel("Proposed cash purchase price", { exact: true }).fill("400000");
+  await page.getByRole("button", { name: "About Proposed cash purchase price", exact: true }).click();
+  const purchaseDetails = page.getByRole("dialog", { name: "Proposed cash purchase price details", exact: true });
+  await expect(purchaseDetails).toContainText("Edited by you");
+  await expect(purchaseDetails).toContainText("$350,000");
+  await expect(purchaseDetails.getByRole("link", { name: "Fictional source", exact: true })).toHaveAttribute("href", "https://example.invalid/estimate-source");
+  await page.keyboard.press("Escape");
+  await expect(page.getByLabel("Proposed cash purchase price", { exact: true })).toHaveValue("400000");
+
+  await page.getByRole("tab", { name: "Rental", exact: true }).click();
+  await page.locator("#rental-panel").screenshot({ path: "/private/tmp/bidwise-field-info-desktop.png" });
+  await page.setViewportSize({ width: 390, height: 844 });
+  const rentalInfo = page.getByRole("button", { name: "About Expected monthly rent", exact: true });
+  await rentalInfo.scrollIntoViewIfNeeded();
+  const mobileBefore = await page.evaluate(() => ({ y: scrollY, hash: location.hash }));
+  await rentalInfo.click();
+  const rentalDetails = page.getByRole("dialog", { name: "Expected monthly rent details", exact: true });
+  await expect(rentalDetails).toBeVisible();
+  await expect(rentalDetails).toContainText("Older area benchmark");
+  await expect(rentalDetails).toContainText("Data date");
+  expect(await page.evaluate(() => ({ y: scrollY, hash: location.hash }))).toEqual(mobileBefore);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: "/private/tmp/bidwise-field-info-mobile.png" });
+  await rentalDetails.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(rentalDetails).toBeHidden();
+  await expect(rentalInfo).toBeFocused();
+});
 test("fills source values first, preserves edited and cleared fields through AI and refresh, and explicitly restores defaults", async ({ page }) => {
   let release: (() => Promise<void>) | undefined;
   let modelCalls = 0, analyzed: unknown;
@@ -33,7 +85,9 @@ test("fills source values first, preserves edited and cleared fields through AI 
   await confirm(page);
   await expect(page.getByLabel("Proposed cash purchase price", { exact: true })).toHaveValue("350000");
   await expect(page.getByLabel("Expected monthly rent", { exact: true })).toHaveValue("1700");
+  await page.getByRole("tab", { name: "Resale", exact: true }).click();
   await page.getByLabel("Proposed cash purchase price", { exact: true }).fill("400000");
+  await page.getByRole("tab", { name: "Rental", exact: true }).click();
   await page.getByLabel("Annual property-tax assumption", { exact: true }).fill("");
   await expect.poll(() => Boolean(release)).toBe(true); await release?.();
   await expect(page.getByLabel("Base unit cost 1", { exact: true })).toHaveValue("30000");

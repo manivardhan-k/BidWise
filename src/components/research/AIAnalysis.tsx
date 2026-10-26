@@ -17,14 +17,14 @@ function evidenceLink(id: string, records: SourceResult<PropertyRecords> | null)
   if (known) return { label: known[0], href: known[1] };
   if (id.startsWith("renovation")) return { label: "Renovation assumptions and calculation", href: "#renovation-title" };
   if (id.startsWith("rent_")) return { label: "Rental assumptions and calculation", href: "#rent-title" };
-  if (id.startsWith("flip_")) return { label: "Resale assumptions and calculation", href: "#flip-title" };
+  if (id.startsWith("flip_")) return { label: "Resale assumptions and calculation", href: "#resale-title" };
   if (id.startsWith("listing_")) return { label: "Copied-page claim and comparison", href: "#listing-title" };
   return { label: "Source context and limitations", href: "#remaining-checks" };
 }
 export function AIAnalysis({ analysis, outdated, waiting, canRefresh, onRefresh }: { analysis: AnalysisState; outdated: boolean; waiting: boolean; canRefresh: boolean; onRefresh: () => void }) {
   return <section className="analysis-section" aria-labelledby="analysis-title">
-    <div className="section-heading"><div><span className="section-kicker">Interpretation, separate from records</span><h3 id="analysis-title" className="section-title"><Sparkles size={20} aria-hidden="true" />AI property analysis</h3></div><button className="secondary-button" disabled={analysis.status === "loading" || !canRefresh} onClick={onRefresh}>{analysis.status === "loading" ? "Analysis requested…" : "Refresh AI analysis"}</button></div>
-    <p className="analysis-limit">AI can miss or misread details. Open the referenced report sections to compare its explanation with the actual records and assumptions.</p>
+    <div className="section-heading"><h3 id="analysis-title" className="section-title"><Sparkles size={20} aria-hidden="true" />AI property analysis</h3><button className="secondary-button" disabled={analysis.status === "loading" || !canRefresh} onClick={onRefresh}>{analysis.status === "loading" ? "Analysis requested…" : "Refresh AI analysis"}</button></div>
+    <p className="analysis-limit">AI can be wrong. Check its linked records and assumptions.</p>
     {analysis.status === "available" ? <>
       {outdated && <div className="notice notice-error" role="status">AI analysis is outdated. Financial assumptions have changed since this explanation was generated. Refresh AI analysis for the current numbers.</div>}
       <h4>BidWise’s take</h4><p className="analysis-summary">{analysis.summary}</p>

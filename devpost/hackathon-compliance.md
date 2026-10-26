@@ -1,7 +1,17 @@
 # BidWise hackathon compliance
 
-Last checked: October 19, 2026 (America/New_York).
+Latest source-publication check: October 26, 2026 (America/New_York).
 Submission target: October 25; official deadline: October 26, 2026, 5:00 PM EDT.
+
+## October 26 source-publication checkpoint
+
+The entrant explicitly authorized saving and pushing the complete project on October 26 and will record the video and submit on Devpost. This supersedes earlier no-push instructions. The working source includes the UI refresh, tabbed finance controls, PDF export, copied-page recovery, approved planning documents and demo draft.
+
+All 150 unit tests, typecheck and lint passed again in the source-publication check. The completed build chat separately recorded a successful production build and all 39 production browser regressions; the recording preview was left running. Candidate files and all 325 reachable historical blobs were checked for configured private keys and common token/private-key patterns, with no findings. The personal learner profile, environment files, raw source evidence and local caches remain ignored and excluded.
+
+Publishing source does not establish a completed video, a Devpost submission receipt, personal eligibility/survey completion, or previously unrecorded learning/semantic/accessibility acceptance. No project-wide license has been selected; the rules recommend one. Preserve the factual unfinished items rather than marking them passed without evidence.
+
+The tables below preserve the **October 19 setup baseline**. They are historical; consult the current README and build-handoff notes for later implementation and verification, and this checkpoint for source-publication authorization.
 
 Statuses: **Complete / In progress / Blocked / Needs user action**. Complete requires evidence. This file supplements the official workflow; it is not the skill-generated build checklist or an approved plan.
 

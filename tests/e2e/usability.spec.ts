@@ -54,6 +54,7 @@ test("keeps section text unboxed after clicks while preserving keyboard control 
 });
 test("restores edited and cleared scenario values only for the same confirmed parcel", async ({ page }) => {
   await setup(page); await page.goto("/"); await find(page);
+  await page.getByRole("tab", { name: "Rental", exact: true }).click();
   await page.getByLabel("Annual property-tax assumption", { exact: true }).fill("7777");
   await page.getByLabel("Expected monthly rent", { exact: true }).fill("2500");
   await page.getByLabel("Expected monthly rent", { exact: true }).fill("");
@@ -97,11 +98,12 @@ test("presents a consolidated take with recommended next steps", async ({ page }
 });
 test("identifies invalid assumptions inline and keeps mobile controls usable", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 }); await setup(page); await page.goto("/"); await find(page);
+  await page.getByRole("tab", { name: "Rental", exact: true }).click();
   const vacancy = page.getByLabel("Vacancy and lost rent (%)", { exact: true });
   await vacancy.fill("120"); await expect(vacancy).toHaveAttribute("aria-invalid", "true");
   await expect(page.getByText("Use a percentage from 0 to 100.", { exact: true })).toBeVisible();
   await expect(vacancy).toHaveValue("120");
-  const targets = await page.locator(".source-button, .input-modes button, .example-button").evaluateAll(elements => elements.map(el => { const r = el.getBoundingClientRect(); return { width: r.width, height: r.height }; }));
+  const targets = await page.locator(".source-button:visible, .input-modes button, .example-button, .scenario-tabs button").evaluateAll(elements => elements.map(el => { const r = el.getBoundingClientRect(); return { width: r.width, height: r.height }; }));
   expect(targets.every(r => r.width >= 44 && r.height >= 44)).toBe(true);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await vacancy.evaluate(element => element.scrollIntoView({ block: "center" }));
@@ -113,12 +115,20 @@ test("has no automated WCAG A or AA violations in the empty and populated mobile
     const result = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
     expect(result.violations.map(item => ({ id: item.id, nodes: item.nodes.map(node => ({ target: node.target, summary: node.failureSummary })) }))).toEqual([]);
   };
-  await scan(); await find(page); await scan();
+  await scan(); await find(page);
+  for (const name of ["Renovation", "Rental", "Resale"]) {
+    await page.getByRole("tab", { name, exact: true }).click();
+    await scan();
+  }
 });
 test("keeps report content printable and reflows at narrow widths", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 800 }); await setup(page); await page.goto("/"); await find(page);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.emulateMedia({ media: "print" });
+  await expect(page.getByRole("tablist", { name: "Scenarios" })).toBeHidden();
+  for (const name of ["Renovation budget", "Basic cash rental scenario", "Cash resale scenario"]) {
+    await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+  }
   await expect(page.getByRole("heading", { name: "10 Sample St", exact: true })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Report sections" })).toBeHidden();
   await expect(page.getByRole("region", { name: "AI property analysis", exact: true })).toBeVisible();
