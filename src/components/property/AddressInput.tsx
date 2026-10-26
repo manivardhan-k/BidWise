@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { Search } from "lucide-react";
 
 // Suggestions are only an editing aid. Selecting one never confirms a parcel.
 export function AddressInput({ value, onChange, disabled, children }: { value: string; onChange: (value: string) => void; disabled: boolean; children: React.ReactNode }) {
@@ -40,6 +41,7 @@ export function AddressInput({ value, onChange, disabled, children }: { value: s
     onBlur={event => { if (!root.current?.contains(event.relatedTarget)) setFocused(false); }}
     onClick={event => { if (event.target instanceof Element && event.target.closest('button[type="submit"]')) { setFocused(false); setDismissed(value); } }}>
     <div className="address-input">
+    <Search className="search-icon" size={21} aria-hidden="true" />
     <input id="property-input" type="text" role="combobox" autoComplete="off" maxLength={50000} value={value}
       onChange={event => { onChange(event.target.value); setActive(-1); setDismissed(null); }} onFocus={() => setFocused(true)}
       onKeyDown={event => {

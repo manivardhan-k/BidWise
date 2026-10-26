@@ -90,7 +90,7 @@ Public repository and short public video remain required. Optional deployment is
 
 Implements `prd.md > Look and Feel` and `Screens and Layout`.
 
-Light background with warm stone/off-white surfaces, dark readable text and muted pine accents. Subtle card borders, consistent spacing and tabular financial numerals. Desktop uses map-left/basic-details-right, followed by detailed evidence, renovation and separately labeled resale/rental sections. Stack naturally on mobile without horizontal overflow.
+Updated by the user on October 26: light warm background, vibrant coral actions, lilac/mint panels and dark readable text. Pill-shaped buttons/navigation/status labels, 24 px rounded cards, locally served variable DM Sans body text and Manrope headings, and labeled Lucide icons. Keep copy concise; put the detailed coverage list behind a native disclosure without hiding identity conflicts or source failures. Use consistent spacing and tabular financial numerals. Desktop uses map-left/basic-details-right, followed by detailed evidence, renovation and separately labeled resale/rental sections. Stack naturally on mobile without horizontal overflow.
 
 Smooth short transitions are for useful state changes, never simulated progress or a constantly moving marker. Honor reduced motion. Keep map pitch/bearing zero, retain attribution and use a 28–36 px shaded house SVG. Use accessible text labels in addition to color. Information buttons support keyboard, touch, focus and Escape dismissal; technical terms receive short explanations.
 

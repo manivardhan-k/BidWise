@@ -36,7 +36,7 @@ Source: `scope.md > The Core Loop` and `Inspiration & Identity`; learner's expli
 
 Source: `scope.md > Inspiration & Identity`; learner's explicit PRD styling answer; v3 §8.
 
-Basic but modern, minimalist, light themed and not flashy. Smooth, restrained transitions support changes in state. Honor reduced-motion preferences. Carry forward v3's muted neutrals/pine accent, readable typography, clear spacing, flat 2D map and subtly dimensional house marker. Explain unfamiliar terms without requiring investment knowledge.
+October 26 user revision: modern and vibrant, with pill-shaped controls, attractive fonts, shorter copy and icons. Use coral actions, lilac and mint supporting surfaces, dark readable text, Manrope headings and DM Sans body text. Keep longer source/coverage explanations available through disclosures. Smooth, restrained transitions support state changes and honor reduced motion. Retain the flat 2D map and house marker; explain unfamiliar terms without requiring investment knowledge.
 
 ## Features and Behavior
 

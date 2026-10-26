@@ -1,5 +1,9 @@
 # BidWise build handoff — October 23, 2026
 
+## October 26 interface refresh
+
+The user requested vibrant colors, pill designs, better fonts, less text and more icons. This visual revision is implemented across search, confirmation, source reports and financial scenarios. See `docs/ui-refresh-2026-10-26.md` for design tokens, verification and the current local preview. Existing backend/provider edits in this shared checkout are separate work; keep them intact.
+
 ## Current state and boundaries
 
 Fast mode; scope/PRD/spec/build order are approved. Early source/report UI review is accepted. Preserve both Gemini extraction and property/scenario analysis plus renovation, cash resale and basic cash rental. The learner explicitly requested editable starting estimates and authorized independent work during model failures. Do not reinterview settled choices or remove approved features.

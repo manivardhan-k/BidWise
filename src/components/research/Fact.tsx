@@ -1,5 +1,6 @@
 "use client";
 import * as Popover from "@radix-ui/react-popover";
+import { Info } from "lucide-react";
 import type { FactEvidence } from "@/lib/property/types";
 export function formatValue(fact: FactEvidence) {
   if (fact.value === null) return "Not available";
@@ -10,7 +11,7 @@ export function formatValue(fact: FactEvidence) {
 export function Fact({ fact, prominent = false }: { fact: FactEvidence; prominent?: boolean }) {
   return <div className={`fact ${prominent ? "fact-prominent" : ""}`}>
     <div className="fact-heading"><span>{fact.label}</span><Popover.Root>
-      <Popover.Trigger asChild><button className="source-button" aria-label={`Source for ${fact.label}`}>Source</button></Popover.Trigger>
+      <Popover.Trigger asChild><button className="source-button" aria-label={`Source for ${fact.label}`}><Info size={13} aria-hidden="true" /><span>Source</span></button></Popover.Trigger>
       <Popover.Portal><Popover.Content className="source-popover" sideOffset={8} aria-label={`${fact.label} source details`}>
         <strong>{fact.label}</strong><p>{fact.value === null ? "Not available in the returned record." : "Matched to an NJGIN record. This is not a physical inspection or certification."}</p>
         <p>{fact.caveat}</p>{fact.rawValue && <p>Original source value: <code>{fact.rawValue}</code></p>}<dl><dt>Record publication</dt><dd>{fact.sourceDate ?? "Not supplied"}</dd><dt>Retrieved</dt><dd>{new Date(fact.fetchedAt).toLocaleString()}</dd></dl>

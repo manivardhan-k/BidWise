@@ -122,6 +122,7 @@ test("shows the expanded record, readable deed date and explicit coverage gaps",
   await expect(page.getByText("Residential units", { exact: true })).toBeVisible();
   await expect(page.getByText("Lot area (acres)", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "What this report covers" })).toBeVisible();
+  await page.getByText("Sources, coverage & limitations", { exact: true }).click();
   await expect(page.getByText("Other hazards and local restrictions", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Source for Deed date", exact: true }).click();
   await expect(page.getByText("Original source value:")).toContainText("181010");

@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { MapPin, MapPinned } from "lucide-react";
 import type { Map as MapboxMap, Marker } from "mapbox-gl";
 import type { PropertyIdentity } from "@/lib/property/types";
-const markerSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="36" height="42" viewBox="0 0 36 42"><ellipse cx="18" cy="37" rx="12" ry="3" fill="#20392f" opacity=".18"/><path d="M18 39 11 29h14Z" fill="#315f48"/><path d="M6 17 18 6l12 11v16H6Z" fill="#f6f7ef" stroke="#315f48" stroke-width="2"/><path d="M18 6 32 18l-3 3L18 11 7 21l-3-3Z" fill="#315f48"/><path d="M18 11v21h12V21Z" fill="#dce9d7"/><path d="M14 23h8v10h-8Z" fill="#315f48"/><path d="M10 19h5v5h-5Z" fill="#a5c7af"/></svg>';
+const markerSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="36" height="42" viewBox="0 0 36 42"><ellipse cx="18" cy="37" rx="12" ry="3" fill="#252438" opacity=".18"/><path d="M18 39 11 29h14Z" fill="#d73f2b"/><path d="M6 17 18 6l12 11v16H6Z" fill="#fff5ef" stroke="#d73f2b" stroke-width="2"/><path d="M18 6 32 18l-3 3L18 11 7 21l-3-3Z" fill="#d73f2b"/><path d="M18 11v21h12V21Z" fill="#ffe0d0"/><path d="M14 23h8v10h-8Z" fill="#d73f2b"/><path d="M10 19h5v5h-5Z" fill="#f8bca4"/></svg>';
 export default function PropertyMap({ property }: { property: PropertyIdentity | null }) {
   const host = useRef<HTMLDivElement>(null);
   const map = useRef<MapboxMap | null>(null);
@@ -52,9 +53,10 @@ export default function PropertyMap({ property }: { property: PropertyIdentity |
   }, [property]);
   return <div className="map-panel" aria-label="Property location">
     <div className="map-canvas" ref={host} style={{ visibility: property && status !== "unavailable" ? "visible" : "hidden" }} />
-    {(!property || status !== "ready") && <div className="map-placeholder" role="status"><div className="map-placeholder-symbol" aria-hidden="true">⌂</div>
+    <span className="map-label"><MapPin size={13} aria-hidden="true" />Property location</span>
+    {(!property || status !== "ready") && <div className="map-placeholder" role="status"><div className="map-placeholder-symbol"><MapPinned size={42} strokeWidth={1.6} aria-hidden="true" /></div>
       <h2>{!property ? "Put a property in context." : status === "unavailable" ? "The map is unavailable." : "Locating your property…"}</h2>
-      <p>{!property ? "Search an address and confirm its parcel to see the location here." : status === "unavailable" ? "You can still review its address, parcel identifiers and source records." : "Your source records will appear independently of the map."}</p>
+      <p>{!property ? "Find an address to see where it all comes together." : status === "unavailable" ? "Your address and source records are still available." : "Source records load separately."}</p>
       {property && <p className="map-coordinate">{property.location.y.toFixed(6)}, {property.location.x.toFixed(6)}</p>}
     </div>}
     {property && status === "ready" && <div className="map-caption">{property.precision === "PointAddress" ? "Address-point location" : "Approximate location"} · Parcel boundaries are not a survey</div>}
