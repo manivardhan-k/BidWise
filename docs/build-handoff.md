@@ -51,3 +51,8 @@ Prior exact/minimal/v1/generateContent3.8 calls returned high-demand503 while St
 - Final learner full-journey review and revisions, then the single learning wrap-up/app map. Main slice boxes stay unchecked until their actual criteria pass; this is not ready-to-ship approval.
 - TargetNode24, current fresh-install/release checks, project-wide license selection, source-use/republication review and any public-host signing/abuse/provider-budget controls. No push/deployment authorized.
 - Existing lint-chain advisory paths involve unpatched braces3.0.3 via micromatch/fast-glob. Previous successful audit reported zero production advisories; that is dated evidence, not a security guarantee. Do not blindly apply the proposed Next14 lint downgrade. See third-party notices and finance checkpoint.
+
+
+## October26 Groq trial supersedes Gemini-only selection
+
+User requested free Groq, entered the key locally and confirmed done. `AI_PROVIDER=groq` now selects GPT-OSS120B for extraction, analysis and allowances. Gemini remains configured/selectable with its original policy. No paid tier, purchase or automatic provider switch.108unit tests/typecheck/lint/build and25browser regressions passed; a live extraction, allowances and full canonical report each succeeded. A fuller browser attempt initially failed evidence checks; the new strict evidence-ID enum passed a later full report with5findings. Full noisy-page/semantic acceptance and learner review remain pending; do not promise availability. See docs/groq-trial-2026-10-26.md. Canonical production preview3100/session91762; UI dev3101stopped after handoff. Existing UI/dependency changes remain separate; do not sweep them into the API commit. Latest usage89%used/11%remaining; stop95%.

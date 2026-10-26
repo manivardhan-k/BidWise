@@ -55,3 +55,14 @@ Raw sanitized probe evidence stays under ignored `docs/evidence/`. The failed fi
 The learner also requests editable property-specific starting estimates in Explore the numbers. This supersedes the entirely manual starting-input design; see `property-estimate-plan.md`. It is recorded, not implemented or silently replaced with arbitrary values. Gemini reliability takes priority in this turn.
 
 Mechanical verification:69 unit tests,19 production browser regressions, typecheck, lint and production build pass. The mobile chart test now waits on the actual resize condition before checking overflow; it does not mask a persistent layout failure.
+
+
+## October 26 — fallback attempted, report rejected as invalid output
+
+The learner saw the generic analysis-unavailable message and asked whether the older-model fallback was running. Live configuration still names3.8 Flash preferred and3.5 Flash-Lite fallback. No configuration or fallback policy was changed. Existing unrelated package/font changes were left untouched.
+
+Two independent, single-request arithmetic controls using the local key and only a public prompt returned3.8 HTTP503 (~4s) and3.5 HTTP200/completed with the correct answer (~8s). These controls establish limited current availability, not full-report quality or the outcome of the learner's original request.
+
+One production identify→analysis replay for the existing public Richardson source example, without pasted text or user financial assumptions, reproduced the generic message. The response reported `category=invalid_output`, `attempts=3`, `failedModel=gemini-3.5-flash-lite`; both records and flood sources were available. Analysis elapsed about42.5seconds. The fallback therefore was attempted in this replay, but no output passed the local checks. The precise failing rule (JSON/schema or evidence/numeric validation) was not retained, so do not claim a specific content defect or assert this is the learner's original response. No repeated model calls were made after that result.
+
+The current UI shows only the generic failure message even though the route returns category/model/attempts. Clarifying that message and retaining a safe validation-rule diagnostic remain possible follow-up fixes. This investigation changed no application code, relaxed no validators and introduced no paid provider. All19 Gemini transport regressions passed. Full live analysis acceptance remains incomplete.

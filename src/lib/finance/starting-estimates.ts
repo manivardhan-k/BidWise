@@ -36,8 +36,8 @@ export function modelEstimateEvidence(records: SourceResult<PropertyRecords>, ar
   listing?.claims.forEach((claim, index) => evidence.set(`listing_${index}`, { value: `${claim.kind}: ${claim.value}; quotation: ${claim.snippet}`, description: "User-supplied copied claim, not independently verified." }));
   return evidence;
 }
-export function modelStartingEstimates(body: z.infer<typeof modelEstimatesSchema>, checkedAt: string): StartingEstimate[] {
-  return body.estimates.map(item => ({ ...item, kind: "model_allowance", confidence: "low", rangeKind: "planning_range", sourceLabel: "Gemini provisional planning allowance", sourceDate: null, checkedAt, explanation: `${item.explanation} Model estimate, not a quote or established property condition. Basis: ${item.evidenceIds.join(", ")}.` }));
+export function modelStartingEstimates(body: z.infer<typeof modelEstimatesSchema>, checkedAt: string, model = "Gemini"): StartingEstimate[] {
+  return body.estimates.map(item => ({ ...item, kind: "model_allowance", confidence: "low", rangeKind: "planning_range", sourceLabel: `${model} provisional planning allowance`, sourceDate: null, checkedAt, explanation: `${item.explanation} Model estimate, not a quote or established property condition. Basis: ${item.evidenceIds.join(", ")}.` }));
 }
 function dollars(text: string) { return /^\$?\d+(?:,\d{3})*(?:\.\d{1,2})?$/.test(text.trim()) ? Number(text.replace(/[$,]/g, "")) : null; }
 export function baselineEstimates(records: SourceResult<PropertyRecords>, area: SourceResult<AreaBenchmarks>, listing?: ListingCandidate): EstimateBundle {

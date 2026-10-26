@@ -3,7 +3,7 @@ import { verifyIdentity } from "@/lib/property/identity";
 import { matchReviewMessage } from "@/lib/property/match-review";
 import { recordsFor } from "@/lib/property/report";
 import { cachedAreaBenchmarksFor } from "@/lib/providers/census";
-import { estimateStartingAssumptions, safeGeminiFailure } from "@/lib/providers/gemini";
+import { estimateStartingAssumptions, safeAiFailure, aiFailureMessage } from "@/lib/providers/ai";
 import { baselineEstimates, recordEvidenceKey, modelEstimateEvidence, modelStartingEstimates, validateModelEstimates } from "@/lib/finance/starting-estimates";
 import { parsedPropertySchema, verifyListingReceipt } from "@/lib/analysis/listing-receipt";
 import { InputError, inputFailure, json, readJson } from "@/lib/http";
@@ -31,10 +31,10 @@ export async function POST(request: Request) {
     try {
       const result = await estimateStartingAssumptions(evidence);
       const validated = validateModelEstimates(result.data, evidence);
-      return json({ ...common, estimates: [...baseline.estimates, ...modelStartingEstimates(validated, common.checkedAt)], modelStatus: "available", model: result.model, fallbackFrom: result.fallbackFrom });
+      return json({ ...common, estimates: [...baseline.estimates, ...modelStartingEstimates(validated, common.checkedAt, result.model)], modelStatus: "available", model: result.model, provider: result.provider, fallbackFrom: result.fallbackFrom });
     } catch (error) {
-      const failure = safeGeminiFailure(error);
-      return json({ ...common, modelStatus: "unavailable", category: failure.category, attempts: failure.attempts, failedModel: failure.model, message: "Gemini planning allowances are unavailable. Sourced starting values and editable planning assumptions remain usable; no model estimates were fabricated." });
+      const failure = safeAiFailure(error);
+      return json({ ...common, modelStatus: "unavailable", category: failure.category, provider: failure.provider, validationFailure: failure.validationFailure, attempts: failure.attempts, failedModel: failure.model, message: `AI planning allowances are unavailable. ${aiFailureMessage(failure)} Sourced starting values and editable planning assumptions remain usable.` });
     }
   } catch (error) { return inputFailure(error); }
 }

@@ -341,3 +341,8 @@ Usage management means bounded requests, identical-snapshot reuse and explicit q
 - **Resolved:** learner approved this specification. `5-build` still establishes approved build order and selected mode before implementation, followed by required hands-on checkpoints, verified milestones, final review and learning wrap-up/app map. Spec approval does not claim any feature is built or submission-ready.
 
 Independent read-only specification review completed before learner review. No blocking scope contradiction found; retained basic/history fields, sensitivity-chart behavior, renovation allowance accounting and rental fraction guards were made explicit. No external integration or model quality was certified by this document review.
+
+
+## October 26 — learner-authorized free Groq trial
+
+The learner explicitly asked for a free alternative, supplied a Groq key locally and said “lets try that.” This supersedes the earlier Gemini-only provider restriction for the trial while retaining both extraction and analysis and all financial functionality. `AI_PROVIDER=groq` selects Groq GPT-OSS120B for extraction, property/scenario analysis and provisional cost allowances; `AI_PROVIDER=gemini` preserves the existing Gemini3.8→503-only3.5 behavior. A key alone never selects a provider. No automatic cross-provider fallback, paid tier or billing change is authorized. Shared instructions and unchanged local validators apply to both providers. See docs/groq-trial-2026-10-26.md.
