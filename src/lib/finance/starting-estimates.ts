@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isRentalPrice } from "../analysis/prices";
 import { type FinanceInputs } from "./engines";
 import type { ListingCandidate } from "../analysis/validate";
 import type { PropertyRecords, SourceResult } from "../property/types";
@@ -39,16 +40,24 @@ export function modelEstimateEvidence(records: SourceResult<PropertyRecords>, ar
 export function modelStartingEstimates(body: z.infer<typeof modelEstimatesSchema>, checkedAt: string, model = "Gemini"): StartingEstimate[] {
   return body.estimates.map(item => ({ ...item, kind: "model_allowance", confidence: "low", rangeKind: "planning_range", sourceLabel: `${model} provisional planning allowance`, sourceDate: null, checkedAt, explanation: `${item.explanation} Model estimate, not a quote or established property condition. Basis: ${item.evidenceIds.join(", ")}.` }));
 }
-function dollars(text: string) { return /^\$?\d+(?:,\d{3})*(?:\.\d{1,2})?$/.test(text.trim()) ? Number(text.replace(/[$,]/g, "")) : null; }
+function dollars(text: string) {
+  if (!/^\$?\d+(?:,\d{3})*(?:\.\d{1,2})?$/.test(text.trim())) return null;
+  const value = Number(text.replace(/[$,]/g, ""));
+  return Number.isFinite(value) ? value : null;
+}
 export function baselineEstimates(records: SourceResult<PropertyRecords>, area: SourceResult<AreaBenchmarks>, listing?: ListingCandidate): EstimateBundle {
   const checkedAt = new Date().toISOString(), estimates: StartingEstimate[] = [], gaps: string[] = [];
   const facts = records.status === "available" ? records.data.facts : [];
   const fact = (id: string) => facts.find(item => item.id === id);
   const add = (field: EstimateField, value: number, low: number, high: number, explanation: string, extra: Partial<StartingEstimate> = {}) => estimates.push({ field, value, low, high, explanation, kind: "illustrative", confidence: "low", rangeKind: low === high ? "none" : "planning_range", sourceLabel: "BidWise editable planning assumption", sourceDate: null, checkedAt, ...extra });
-  const asking = listing?.claims.filter(claim => claim.kind === "asking_price") ?? [];
+  const asking = listing?.claims.filter(claim => claim.kind === "asking_price" && !isRentalPrice(claim.snippet)) ?? [];
   const askValues = [...new Set(asking.map(claim => dollars(claim.value)))];
   if (askValues.length === 1 && askValues[0] !== null && askValues[0] > 0) add("flip.purchase", askValues[0], askValues[0], askValues[0], `Copied asking price: “${asking[0].snippet}”. Starting purchase assumption only, not an agreed price or valuation.`, { kind: "copied_claim", sourceLabel: "Unverified copied page" });
   else if (asking.length) gaps.push("A single unambiguous asking price could not be read. Opening bids and judgments are never substituted for purchase price.");
+  const advertisedRent = listing?.claims.filter(claim => claim.kind === "monthly_rent") ?? [];
+  const rentValues = [...new Set(advertisedRent.map(claim => dollars(claim.value)))];
+  if (rentValues.length === 1 && rentValues[0] !== null && rentValues[0] > 0) add("rent.monthlyRent", rentValues[0], rentValues[0], rentValues[0], `Advertised monthly rent: “${advertisedRent[0].snippet}”. This is an unverified asking rent, not a signed lease, achieved income or rent forecast.`, { kind: "copied_claim", sourceLabel: "Unverified copied rental page" });
+  else if (advertisedRent.length) gaps.push("The copied page did not supply one unambiguous monthly rent. Confirm the amount and rental period.");
   const units = fact("residential_units")?.value;
   const residential = fact("class")?.rawValue === "2" || /^(?:Residential \(class 2\)|2(?:\b|\s|—))/.test(String(fact("class")?.value ?? ""));
   if (area.status === "available" && units === 1 && residential) {
@@ -59,7 +68,7 @@ export function baselineEstimates(records: SourceResult<PropertyRecords>, area: 
     };
     if (!estimates.some(item => item.field === "flip.purchase")) benchmark("flip.purchase", a.homeValue, a.homeValueMoe, "Owner-occupied home-value median used as an editable purchase placeholder");
     benchmark("flip.resale", a.homeValue, a.homeValueMoe, "Owner-occupied home-value median used without any assumed renovation uplift");
-    benchmark("rent.monthlyRent", a.contractRent, a.contractRentMoe, "Contract-rent median per rented dwelling used as a starting rent; utilities coverage varies by lease");
+    if (!estimates.some(item => item.field === "rent.monthlyRent")) benchmark("rent.monthlyRent", a.contractRent, a.contractRentMoe, "Contract-rent median per rented dwelling used as a starting rent; utilities coverage varies by lease");
   } else gaps.push(area.status === "unavailable" ? area.message : "Area medians were not applied: this parcel is not confirmed as one residential dwelling. Per-unit rent and whole-building values cannot be silently combined.");
   const tax = fact("historical_tax");
   if (tax && typeof tax.value === "number" && tax.value > 0) add("rent.annualTax", tax.value, tax.value, tax.value, `Historical reported tax used as a provisional annual assumption. ${tax.caveat} Verify the current bill and reassessment before relying on it.`, { kind: "historical_record", sourceUrl: tax.sourceUrl, sourceLabel: "NJGIN / MOD-IV historical tax", sourceDate: tax.sourceDate, checkedAt: tax.fetchedAt });

@@ -18,14 +18,10 @@ export function safeAiFailure(error: unknown) {
   return { category: failure.category, httpStatus: failure.httpStatus, attempts: failure.attempts, model: failure.model, provider: "gemini", validationFailure: undefined };
 }
 export function aiFailureMessage(failure: ReturnType<typeof safeAiFailure>) {
-  const model = failure.model ?? (failure.provider === "groq" ? "Groq" : "Gemini");
-  const reason = failure.category === "invalid_output" ? `the response failed ${failure.validationFailure ?? "output"} validation; it was not accepted`
-    : failure.category === "quota" ? "the free account's request or token limit was reached; wait for its limit to reset or supply a shorter page"
-    : failure.category === "timeout" ? "the request timed out after 45 seconds"
-    : failure.category === "authentication" ? "the API key or account access was rejected"
-    : failure.category === "configuration" ? "the selected provider's local key or model configuration is missing or unsupported"
-    : failure.category === "bad_request" ? "the provider rejected this request"
-    : failure.category === "network" ? "the provider could not be reached"
-    : "the provider could not serve the request";
-  return `${model}: ${reason}. ${failure.attempts} model ${failure.attempts === 1 ? "attempt" : "attempts"}. No automatic provider switch was made.`;
+  if (failure.category === "invalid_output") return "The AI response did not pass the source and output checks, so it was not accepted. You can try again; the response has not replaced your source information.";
+  if (failure.category === "quota") return "The AI service has reached its free usage limit. Wait before trying again; a shorter copied page may fit the available limit.";
+  if (failure.category === "timeout") return "The AI service did not respond within 45 seconds. You can try again; your records and entered values remain available.";
+  if (failure.category === "authentication") return "The AI service rejected its API key or account access. The local configuration needs to be checked before retrying.";
+  if (failure.category === "configuration") return "AI is not configured yet. Check the selected provider and local API key, then restart BidWise.";
+  return "The AI service could not complete this request. Try again later; you can continue with the source records and editable scenarios.";
 }

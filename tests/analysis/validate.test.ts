@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { validateAnalysis, validateExtraction } from "../../src/lib/analysis/validate";
 describe("AI evidence guards", () => {
+  it("keeps advertised monthly rent separate from a purchase asking price", () => {
+    const text = "10 Sample St, Sample, NJ. Rent $2,375/mo.";
+    const candidate = { address: "10 Sample St, Sample, NJ", addressSnippet: "10 Sample St, Sample, NJ", claims: [{ kind: "monthly_rent", value: "$2,375", snippet: "Rent $2,375/mo" }] };
+    expect(validateExtraction({ candidates: [candidate] }, text).candidates[0].claims[0].kind).toBe("monthly_rent");
+    expect(() => validateExtraction({ candidates: [{ ...candidate, claims: [{ ...candidate.claims[0], kind: "asking_price" }] }] }, text)).toThrow("rent");
+    expect(() => validateExtraction({ candidates: [{ ...candidate, claims: [{ ...candidate.claims[0], snippet: "$2,375" }] }] }, text)).toThrow("period");
+  });
   it("rejects fabricated snippets even when extraction is valid JSON", () => {
     expect(() => validateExtraction({ candidates: [{ address: "123 Main St", addressSnippet: "123 Main St", claims: [{ kind: "asking_price", value: "$1", snippet: "$1" }] }] }, "123 Main St; price unavailable")).toThrow("Unsupported claim");
   });

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Search } from "lucide-react";
 
 // Suggestions are only an editing aid. Selecting one never confirms a parcel.
-export function AddressInput({ value, onChange, disabled, children }: { value: string; onChange: (value: string) => void; disabled: boolean; children: React.ReactNode }) {
+export function AddressInput({ value, onChange, disabled, children, error }: { error?: string; value: string; onChange: (value: string) => void; disabled: boolean; children: React.ReactNode }) {
   const [focused, setFocused] = useState(false);
   const [result, setResult] = useState<{ query: string; items: string[]; message: string } | null>(null);
   const [active, setActive] = useState(-1);
@@ -42,7 +42,7 @@ export function AddressInput({ value, onChange, disabled, children }: { value: s
     onClick={event => { if (event.target instanceof Element && event.target.closest('button[type="submit"]')) { setFocused(false); setDismissed(value); } }}>
     <div className="address-input">
     <Search className="search-icon" size={21} aria-hidden="true" />
-    <input id="property-input" type="text" role="combobox" autoComplete="off" maxLength={50000} value={value}
+    <input id="property-input" type="text" disabled={disabled} aria-invalid={Boolean(error)} role="combobox" autoComplete="off" maxLength={50000} value={value}
       onChange={event => { onChange(event.target.value); setActive(-1); setDismissed(null); }} onFocus={() => setFocused(true)}
       onKeyDown={event => {
         if (event.key === "Escape") { setDismissed(value); setActive(-1); }
@@ -55,7 +55,7 @@ export function AddressInput({ value, onChange, disabled, children }: { value: s
           else setDismissed(value);
         }
       }}
-      placeholder="Street address, municipality, NJ" required aria-describedby="input-help" aria-autocomplete="list"
+      placeholder="Street address, municipality, NJ" required aria-describedby={error ? "input-help research-error" : "input-help"} aria-autocomplete="list"
       aria-expanded={open} aria-controls={open ? "address-suggestions" : undefined} aria-activedescendant={open && active >= 0 && items[active] ? `address-option-${active}` : undefined} />
     {open && <div className="address-dropdown"><ul ref={list} id="address-suggestions" role="listbox" aria-label="NJ address suggestions">{items.map((text, index) => <li key={text} role="option" id={`address-option-${index}`} aria-selected={active === index}
       onMouseDown={event => event.preventDefault()} onClick={() => choose(text)}>{text}</li>)}</ul>

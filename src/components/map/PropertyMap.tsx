@@ -11,10 +11,12 @@ export default function PropertyMap({ property }: { property: PropertyIdentity |
   const latest = useRef(property);
   const initialization = useRef<Promise<void> | null>(null);
   const disposed = useRef(false);
+  const mapDeadline = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [attempt, setAttempt] = useState(0);
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "unavailable">("idle");
   useEffect(() => {
     disposed.current = false;
-    return () => { disposed.current = true; marker.current?.remove(); map.current?.remove(); map.current = null; };
+    return () => { if (mapDeadline.current) clearTimeout(mapDeadline.current); disposed.current = true; marker.current?.remove(); map.current?.remove(); map.current = null; };
   }, []);
   useEffect(() => {
     latest.current = property;
@@ -29,7 +31,7 @@ export default function PropertyMap({ property }: { property: PropertyIdentity |
     if (map.current) { position(); return; }
     if (!initialization.current) {
       initialization.current = (async () => {
-        const response = await fetch("/api/map-config");
+        const response = await fetch("/api/map-config", { signal: AbortSignal.timeout(6000) });
         if (!response.ok) throw new Error("Map unavailable.");
         const config = await response.json();
         const mapbox = (await import("mapbox-gl")).default;
@@ -41,22 +43,30 @@ export default function PropertyMap({ property }: { property: PropertyIdentity |
           zoom: 16, pitch: 0, bearing: 0, attributionControl: true, cooperativeGestures: true,
         });
         map.current = instance;
+        mapDeadline.current = setTimeout(() => { if (!disposed.current && map.current === instance && !instance.loaded()) setStatus("unavailable"); }, 15_000);
         instance.addControl(new mapbox.NavigationControl({ showCompass: false }), "top-right");
-        instance.on("load", () => { if (!disposed.current) { setStatus("ready"); position(); } });
-        instance.on("error", () => { if (!disposed.current) setStatus("unavailable"); });
+        instance.on("load", () => { if (!disposed.current && map.current === instance) { if (mapDeadline.current) clearTimeout(mapDeadline.current); setStatus("ready"); position(); } });
+        instance.on("error", () => { if (!disposed.current && map.current === instance) setStatus(previous => previous === "ready" ? previous : "unavailable"); });
         const element = document.createElement("div"); element.className = "house-marker"; element.innerHTML = markerSvg;
         element.setAttribute("role", "img"); marker.current = new mapbox.Marker({ element, anchor: "bottom" }); position();
       })().catch(() => { if (!disposed.current) setStatus("unavailable"); })
         .finally(() => { if (!map.current) initialization.current = null; });
     }
     void initialization.current.then(position);
-  }, [property]);
+  }, [property, attempt]);
+  function retryMap() {
+    if (mapDeadline.current) clearTimeout(mapDeadline.current);
+    marker.current?.remove(); marker.current = null;
+    map.current?.remove(); map.current = null; initialization.current = null;
+    setStatus("loading"); setAttempt(value => value + 1);
+  }
   return <div className="map-panel" aria-label="Property location">
     <div className="map-canvas" ref={host} style={{ visibility: property && status !== "unavailable" ? "visible" : "hidden" }} />
     <span className="map-label"><MapPin size={13} aria-hidden="true" />Property location</span>
     {(!property || status !== "ready") && <div className="map-placeholder" role="status"><div className="map-placeholder-symbol"><MapPinned size={42} strokeWidth={1.6} aria-hidden="true" /></div>
       <h2>{!property ? "Put a property in context." : status === "unavailable" ? "The map is unavailable." : "Locating your property…"}</h2>
       <p>{!property ? "Find an address to see where it all comes together." : status === "unavailable" ? "Your address and source records are still available." : "Source records load separately."}</p>
+      {property && status === "unavailable" && <button className="secondary-button retry-map" type="button" onClick={retryMap}>Retry map</button>}
       {property && <p className="map-coordinate">{property.location.y.toFixed(6)}, {property.location.x.toFixed(6)}</p>}
     </div>}
     {property && status === "ready" && <div className="map-caption">{property.precision === "PointAddress" ? "Address-point location" : "Approximate location"} · Parcel boundaries are not a survey</div>}

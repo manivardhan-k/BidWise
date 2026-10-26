@@ -1,9 +1,10 @@
 import { z } from "zod";
+import { isRentalPrice } from "./prices";
 
 export const listingCandidateSchema = z.object({
   address: z.string().min(1).max(300), addressSnippet: z.string().min(1).max(500),
   claims: z.array(z.object({
-    kind: z.enum(["asking_price", "opening_bid", "judgment", "bedrooms", "bathrooms", "interior_area", "condition", "year_built", "residential_units"]),
+    kind: z.enum(["asking_price", "monthly_rent", "opening_bid", "judgment", "bedrooms", "bathrooms", "interior_area", "condition", "year_built", "residential_units"]),
     value: z.string().min(1).max(500), snippet: z.string().min(1).max(1000),
   })).max(30),
 });
@@ -20,6 +21,8 @@ export function validateExtraction(body: unknown, suppliedText: string) {
   for (const candidate of result.candidates) {
     if (!suppliedText.includes(candidate.addressSnippet) || !candidate.addressSnippet.includes(candidate.address)) throw new Error("Unsupported address quotation.");
     for (const claim of candidate.claims) {
+      if (claim.kind === "asking_price" && isRentalPrice(claim.snippet)) throw new Error("Advertised rent is not a purchase asking price.");
+      if (claim.kind === "monthly_rent" && !/\/\s*(?:mo|month)\b|\bmonthly\b|\bper\s+month\b/i.test(claim.snippet)) throw new Error("Monthly rent requires an explicit rental period in its quotation.");
       if (!suppliedText.includes(claim.snippet) || !claim.snippet.includes(claim.value)) throw new Error("Unsupported claim quotation or value.");
       if (anchors.length > 1) {
         const index = anchors.findIndex(anchor => anchor.candidate === candidate);

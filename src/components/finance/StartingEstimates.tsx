@@ -6,7 +6,7 @@ import type { SourceResult } from "@/lib/property/types";
 export type StartingResponse = EstimateBundle & { pin: string; revision: number; recordKey: string; checkedAt: string; area: SourceResult<AreaBenchmarks>; modelStatus: "not_requested" | "available" | "unavailable"; model?: string; fallbackFrom?: string; message?: string };
 export type StartingState = { status: "idle" | "sources" | "model" | "done" | "unavailable"; data?: StartingResponse; message?: string };
 const labels: Record<StartingEstimate["kind"], string> = { historical_record: "Historical record used", copied_claim: "Copied asking price", area_benchmark: "Older area benchmark", illustrative: "Illustrative assumption", model_allowance: "Provisional AI allowance" };
-export const estimateKindLabel = (item: StartingEstimate) => labels[item.kind];
+export const estimateKindLabel = (item: StartingEstimate) => item.kind === "copied_claim" && item.field === "rent.monthlyRent" ? "Copied asking rent" : labels[item.kind];
 const fractionFields = new Set(["renovation.contingency", "flip.buyerFraction", "flip.commissionFraction", "flip.sellerFraction", "flip.resaleDrop", "flip.extraSellerFraction", "rent.vacancy", "rent.management"]);
 export function estimateValue(item: StartingEstimate, value = item.value) {
   if (fractionFields.has(item.field)) return `${Number((value * 100).toFixed(2))}%`;

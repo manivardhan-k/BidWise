@@ -22,5 +22,6 @@ export function Fact({ fact, prominent = false }: { fact: FactEvidence; prominen
     </Popover.Root></div>
     <div className={`fact-value ${fact.value === null ? "muted" : ""}`}>{formatValue(fact)}</div>
     {fact.id === "deed_date" && fact.value !== null && <small className="fact-note">Year interpreted from source</small>}
+    <div className="print-source"><p>{fact.caveat}</p>{fact.rawValue && <p>Original source value: {fact.rawValue}</p>}<p>Record published: {fact.sourceDate ?? "Not supplied"} · Retrieved: {new Date(fact.fetchedAt).toLocaleString()}</p><a href={fact.sourceUrl}>NJGIN / MOD-IV source record</a></div>
   </div>;
 }

@@ -49,10 +49,11 @@ test("requires confirmation and preserves evidence during map and AI failures", 
   await expect(page.getByText("No flood polygon was returned.", { exact: true })).toBeVisible();
   await expect(page.getByText("No polygon returned does not establish no flood risk.", { exact: true })).toBeVisible();
   await page.locator("#research").getByRole("button", { name: "Source for Assessed value" }).click();
-  await expect(page.getByText("Fixture assessment is not market value.")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Open official source" })).toHaveAttribute("href", "https://example.invalid/fixture");
+  const source = page.getByRole("dialog", { name: "Assessed value source details" });
+  await expect(source.getByText("Fixture assessment is not market value.")).toBeVisible();
+  await expect(source.getByRole("link", { name: "Open official source" })).toHaveAttribute("href", "https://example.invalid/fixture");
   await page.keyboard.press("Escape");
-  await expect(page.getByText("Fixture assessment is not market value.")).not.toBeVisible();
+  await expect(source).not.toBeVisible();
   await expect(page.locator("#research").getByRole("button", { name: "Source for Assessed value" })).toBeFocused();
 });
 test("keeps the report usable with unavailable flood data on mobile", async ({ page }) => {
@@ -125,8 +126,9 @@ test("shows the expanded record, readable deed date and explicit coverage gaps",
   await page.getByText("Sources, coverage & limitations", { exact: true }).click();
   await expect(page.getByText("Other hazards and local restrictions", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Source for Deed date", exact: true }).click();
-  await expect(page.getByText("Original source value:")).toContainText("181010");
-  await expect(page.getByText("NJGIN uses YYMMDD", { exact: false })).toContainText("century is inferred");
+  const source = page.getByRole("dialog", { name: "Deed date source details" });
+  await expect(source.getByText("Original source value:")).toContainText("181010");
+  await expect(source.getByText("NJGIN uses YYMMDD", { exact: false })).toContainText("century is inferred");
   await page.keyboard.press("Escape");
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

@@ -1,7 +1,7 @@
 import { compareListingClaims } from "@/lib/analysis/comparisons";
 import type { ListingCandidate } from "@/lib/analysis/validate";
 import type { PropertyRecords, SourceResult } from "@/lib/property/types";
-const labels: Record<string, string> = { asking_price: "Asking price", opening_bid: "Opening bid", judgment: "Judgment amount", bedrooms: "Bedrooms", bathrooms: "Bathrooms", interior_area: "Interior floor area", condition: "Condition claim", year_built: "Year built", residential_units: "Residential units" };
+const labels: Record<string, string> = { asking_price: "Purchase asking price", monthly_rent: "Advertised monthly rent", opening_bid: "Opening bid", judgment: "Judgment amount", bedrooms: "Bedrooms", bathrooms: "Bathrooms", interior_area: "Interior floor area", condition: "Condition claim", year_built: "Year built", residential_units: "Residential units" };
 const statuses = { matches: "Agrees with record", differs: "Differs from record", cannot_verify: "Cannot verify", not_comparable: "Different kind of information" };
 export function ListingClaims({ candidate, records }: { candidate: ListingCandidate; records: SourceResult<PropertyRecords> | null }) {
   const comparisons = compareListingClaims(candidate.claims, records ?? { status: "unavailable", message: "Records pending" });

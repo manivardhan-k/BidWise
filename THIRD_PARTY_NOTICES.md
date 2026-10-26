@@ -20,10 +20,12 @@ This is a dependency index, not a replacement for package license/notice texts. 
 
 Public source records are attributed in the report and source links. NJGIN parcel/MOD-IV and NJDEP/FEMA flood-service coverage, dates and limitations are described in `docs/data-feasibility.md`. Source access does not establish complete history, clear title or permission to redistribute arbitrary raw payloads. Local raw evidence remains ignored pending source-use/republication review. No Zillow/Auction.com scraping or bundled listing-page content is included.
 
-The house marker is original project artwork. Copied text is manually supplied by the user; it is labeled as claims and processed by Gemini. Google service terms and free-tier data-use rules are separate from the SDK license.
+The house marker is original project artwork. Copied text is manually supplied by the user; it is labeled as claims and processed by the configured Gemini or Groq provider. Provider service terms and free-tier data-use rules apply separately from SDK and model licenses.
 
 A project-wide publication license has not been selected. Do not infer one from the licenses of these dependencies; resolve that and the source-use/publication review before public release.
 
 Starting-value data added October23: US Census coordinate tract geographies and ACS2020–2024 tablesB25077/B25058, served via the independent Census Reporter public API. The publisher states Census data is not copyrighted and permits use; original Census Reporter prose/visualizations have separate licensing and are not copied into this app. Report labels disclose the mirror, source period and limitations. See https://censusreporter.org/about/ and https://geocoding.geo.census.gov/geocoder/Geocoding_Services_API.html.
 
 The October 26 interface refresh uses the Latin variable font files from the pinned Fontsource packages through `next/font/local`; browsers request them from BidWise, not a font CDN. Font and icon license texts remain in the installed packages and must accompany distributions.
+
+Local usability checks use the development-only @axe-core/playwright package (MPL-2.0) and its bundled axe-core. Their license texts stay in the installed packages; the checker is not shipped as a production dependency or sent report data by the app.

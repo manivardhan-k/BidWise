@@ -16,6 +16,19 @@ it("prefills dated area benchmarks and historical tax without pretending to know
   expect(bundle.estimates.some(x => x.value === 900000)).toBe(false);
   expect(bundle.estimates.some(x => x.field === "rent.annualHoa")).toBe(false);
 });
+it("uses a quoted monthly rental advertisement for rent, never as a purchase price", () => {
+  const listing = { address: "10 Sample St", addressSnippet: "10 Sample St", claims: [{ kind: "monthly_rent" as const, value: "$2,375", snippet: "Rent $2,375/mo" }] };
+  const bundle = baselineEstimates(records, area, listing);
+  expect(bundle.estimates.filter(item => item.field === "rent.monthlyRent")).toHaveLength(1);
+  expect(bundle.estimates.find(item => item.field === "rent.monthlyRent")).toMatchObject({ value: 2375, kind: "copied_claim" });
+  expect(bundle.estimates.find(item => item.field === "flip.purchase")?.value).not.toBe(2375);
+  expect(baselineEstimates(records, area, { ...listing, claims: [{ ...listing.claims[0], kind: "asking_price" as const }] }).estimates.some(item => item.field === "flip.purchase" && item.value === 2375)).toBe(false);
+});
+it("withholds copied amounts that overflow instead of placing infinity into an input", () => {
+  const amount = "9".repeat(400);
+  const listing = { address: "10 Sample St", addressSnippet: "10 Sample St", claims: [{ kind: "asking_price" as const, value: amount, snippet: `Asking ${amount}` }] };
+  expect(baselineEstimates(records, { status: "unavailable", message: "No area" }, listing).estimates.some(item => !Number.isFinite(item.value))).toBe(false);
+});
 it("uses one unambiguous asking claim but never an opening bid, judgment, conflicting asking prices or nominal recorded sale", () => {
   const claim = { kind: "asking_price" as const, value: "$420,000", snippet: "Asking $420,000" };
   const listing = { address: "10 Sample St", addressSnippet: "10 Sample St", claims: [claim] };

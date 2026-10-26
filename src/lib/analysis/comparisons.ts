@@ -4,6 +4,7 @@ export type ClaimComparison = { claim: ListingClaim; status: "matches" | "differ
 export function compareListingClaims(claims: ListingClaim[], records: SourceResult<PropertyRecords>): ClaimComparison[] {
   return claims.map(claim => {
     const result = (status: ClaimComparison["status"], explanation: string, officialFactId?: string): ClaimComparison => ({ claim, status, explanation, officialFactId });
+    if (claim.kind === "monthly_rent") return result("cannot_verify", "Advertised monthly rent is a copied claim, not a signed lease or confirmed rental income. This parcel source does not supply rent.");
     if (["asking_price", "opening_bid", "judgment"].includes(claim.kind)) return result("not_comparable", "This is a different price type from assessed value or a historical recorded sale. Different amounts are not a verified conflict.");
     if (claim.kind === "interior_area") return result("not_comparable", "Interior floor area is different from parcel acreage. This source does not supply interior floor area.");
     const officialFactId = claim.kind === "year_built" ? "year_built" : claim.kind === "residential_units" ? "residential_units" : undefined;
